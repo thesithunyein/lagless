@@ -142,7 +142,17 @@ Base swap → Unichain fee change: **2 s** (block timestamps, 1 s resolution).
 
 ## Results
 
-_To be filled with at least 20 live rounds: median latency, and LP fees earned in the Lagless pool vs the control pool._
+24 live rounds on testnet (Nov 17, 2026), `script/rounds.py`, 20-token swaps alternating direction:
+
+| Metric | Result |
+|---|---|
+| Rounds where the shield landed | **24 / 24** |
+| Base swap → Unichain fee change (median) | **2 s** |
+| Latency distribution | 1 s ×1, 2 s ×14, 3 s ×8, 4 s ×1 (block timestamps, 1 s resolution) |
+| Shield fee for a ~0.4% Base move | 0.495–0.50% (vs 0.30% base) |
+| LP fees from the same arbitrage trades | **2.388** (Lagless) vs **1.440** (control) → **+66%** |
+
+What this shows: an arbitrage that lands about 2 s or more after the Base move pays LPs ~66% more in this setup. An arbitrage faster than the callback still pays the base fee; on legacy Reactive (~7 s blocks) that unprotected window would be several times longer.
 
 ## Trust model
 
