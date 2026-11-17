@@ -11,7 +11,7 @@ The same pair trades on Base and Unichain. When the price moves on Base, the Uni
 ## How it works
 
 ```
-Base Sepolia                     Reactive Network (Lasna)                 Unichain Sepolia
+Base Sepolia                     Reactive Omni (Lasna)                 Unichain Sepolia
 ────────────                     ────────────────────────                 ────────────────
 v4 pool ──Swap(sqrtPriceX96)──▶  LaglessReactive.react()                  
                                  • decode Base price                      
@@ -25,7 +25,8 @@ Lagless pool ◀──Swap──────────── (arbitrage on Uni
 ```
 
 - **All decisions happen in the reactive contract**: decoding prices, measuring deviation, choosing the fee, and deciding when to refresh or clear.
-- **The hook stays small.** It accepts calls only from the Reactive callback proxy carrying the expected RVM ID, caps the fee and the shield's duration, and lets shields expire by `block.timestamp`, never by block count.
+- **The hook stays small.** It accepts calls only from the Reactive callback proxy, and only when Reactive Omni has stamped the payload with the LaglessReactive contract's address. It caps the fee and the shield's duration, and lets shields expire by `block.timestamp`, never by block count.
+- **Built for Reactive Omni.** `react()` is called directly by the Omni system contract (`0x8888…8888`, guarded by `onlySystem`; no ReactVM), subscriptions and callbacks go through that system contract (`requestCallbackV_1_0`), and fees are prepaid into the contract's Omni reserves. `src/omni/ReactiveOmni.sol` holds ABI-compatible bindings for solc 0.8.26, because `reactive-lib-omni` requires ^0.8.29 while Uniswap v4 pins 0.8.26.
 - **A control pool** (same pair, static 0.30%, no hook) on Unichain is the baseline for the results.
 
 With the old ~7s Reactive blocks, the fee would land after the arbitrage. With Omni's ~1s blocks and instant finality, it lands while the stale window is still open.
@@ -36,7 +37,8 @@ With the old ~7s Reactive blocks, the fee would land after the arbitrage. With O
 
 | Contract | Chain | Role |
 |---|---|---|
-| `src/LaglessReactive.sol` | Reactive Lasna | Subscribes to `Swap` on both pools and makes all fee decisions |
+| `src/LaglessReactive.sol` | Reactive Omni (Lasna) | Subscribes to `Swap` on both pools and makes all fee decisions |
+| `src/omni/ReactiveOmni.sol` | — | Minimal Reactive Omni system-contract bindings (solc 0.8.26) |
 | `src/LaglessHook.sol` | Unichain Sepolia | v4 dynamic-fee hook (`beforeInitialize`, `beforeSwap`) |
 | `src/test/MockToken.sol` | Base + Unichain Sepolia | Open-mint test tokens, deployed with CREATE2 so both chains get the same addresses |
 
@@ -58,7 +60,7 @@ forge install   # or: git submodule update --init --recursive
 forge test -vv
 ```
 
-There are 15 tests covering the fee curve, caps, expiry, rejection of unauthorized callers and wrong RVM IDs, rejection of static-fee pools, a fuzz test on the fee cap, and a local end-to-end loop (Base move → reactive callback → higher fee on Unichain → convergence → fee cleared).
+There are 19 tests covering the fee curve, caps, expiry, rejection of unauthorized callers and wrong reactive senders, the one-time `setReactive` binding, `onlySystem` on `react()`, rejection of static-fee pools, a fuzz test on the fee cap, and a local end-to-end loop (Base move → reactive callback → higher fee on Unichain → convergence → fee cleared).
 
 ## Deploy (testnets, $0)
 
@@ -76,8 +78,11 @@ forge script script/Deploy.s.sol:DeployBasePool --rpc-url $BASE_SEPOLIA_RPC --pr
 # 3. Hook + Lagless pool + control pool on Unichain → set HOOK, LAGLESS_POOL_ID, CONTROL_POOL_ID
 forge script script/Deploy.s.sol:DeployUnichain --rpc-url $UNICHAIN_SEPOLIA_RPC --private-key $PRIVATE_KEY --broadcast
 
-# 4. Reactive contract (must be the DEPLOYER key, whose address is the RVM ID) → set REACTIVE
+# 4. Reactive contract on Reactive Omni, prepaid with OMNI_RESERVE_WEI (default 0.1 lREACT) → set REACTIVE
 forge script script/Deploy.s.sol:DeployReactive --rpc-url $LASNA_RPC --private-key $PRIVATE_KEY --broadcast
+
+# 5. Bind the hook to the reactive contract (one-time)
+forge script script/Deploy.s.sol:SetReactive --rpc-url $UNICHAIN_SEPOLIA_RPC --private-key $PRIVATE_KEY --broadcast
 ```
 
 If the reactive contract's subscriptions show **INACTIVE** on Reactscan, the contract has debt on the **Omni** ledger (`0x8888…8888`). Top up its Omni reserves; `depositTo` settles the debt first:
@@ -119,9 +124,10 @@ _To be filled with at least 20 live rounds: median latency, and LP fees earned i
 
 ## Trust model
 
-- Only the Unichain Sepolia callback proxy (`0x775c…66C1`), carrying the RVM ID of the reactive contract's deployer, can raise or clear a shield.
+- Only the Unichain Sepolia callback proxy (`0x775c…66C1`), with a payload that Reactive Omni stamped with the LaglessReactive address, can raise or clear a shield.
+- The deployer binds the hook to that reactive address once (`setReactive`); it can never be changed afterwards.
 - The fee is clamped to `[baseFee, maxFee]` and a shield always expires within `maxDuration`, so a stuck or misbehaving signal can't freeze the pool.
-- The hook has no owner and no admin functions.
+- Apart from that one-time binding, the hook has no admin functions.
 
 ## Sources
 

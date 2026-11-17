@@ -10,14 +10,15 @@ import {PoolId, PoolIdLibrary} from "@uniswap/v4-core/src/types/PoolId.sol";
 import {BalanceDelta} from "@uniswap/v4-core/src/types/BalanceDelta.sol";
 import {BeforeSwapDelta, BeforeSwapDeltaLibrary} from "@uniswap/v4-core/src/types/BeforeSwapDelta.sol";
 import {ModifyLiquidityParams, SwapParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
-import {AbstractCallback} from "@reactive/abstract-base/AbstractCallback.sol";
 
 /// @title LaglessHook
 /// @notice Uniswap v4 dynamic-fee hook. A Reactive Network contract watching the same pair on another chain
 ///         raises this pool's LP fee for a short, timestamp-bounded window when the remote price moves, so
 ///         arbitrage against the stale local price pays LPs a higher fee.
-/// @dev Only the Reactive callback proxy, carrying the expected RVM ID, can raise or clear a shield.
-contract LaglessHook is IHooks, AbstractCallback {
+/// @dev Only the Reactive callback proxy, carrying the LaglessReactive contract address as the first argument
+///      (Reactive Omni overwrites it), can raise or clear a shield. The reactive address is set once by the owner
+///      after the reactive contract is deployed, then can never change.
+contract LaglessHook is IHooks {
     using PoolIdLibrary for PoolKey;
     using LPFeeLibrary for uint24;
 
@@ -31,11 +32,23 @@ contract LaglessHook is IHooks, AbstractCallback {
     error HookNotImplemented();
     error MustUseDynamicFee();
     error InvalidConfig();
+    error NotCallbackProxy(address sender);
+    error NotReactive(address sender);
+    error NotOwner();
+    error ReactiveAlreadySet();
+    error TransferFailed();
 
     event ShieldRaised(PoolId indexed poolId, uint24 fee, uint40 expiry, uint160 refSqrtPriceX96);
     event ShieldCleared(PoolId indexed poolId);
+    event ReactiveSet(address reactive);
 
     IPoolManager public immutable poolManager;
+    /// @notice Reactive callback proxy on this chain.
+    address public immutable callbackProxy;
+    /// @notice Deployer allowed to call setReactive() exactly once.
+    address public immutable owner;
+    /// @notice LaglessReactive contract on Reactive Network whose callbacks are accepted.
+    address public reactive;
     /// @notice Fee charged when no shield is active (pips).
     uint24 public immutable baseFee;
     /// @notice Hard cap for any shield fee (pips).
@@ -45,6 +58,12 @@ contract LaglessHook is IHooks, AbstractCallback {
 
     mapping(PoolId => Shield) public shields;
 
+    modifier onlyReactiveCallback(address sender) {
+        if (msg.sender != callbackProxy) revert NotCallbackProxy(msg.sender);
+        if (sender == address(0) || sender != reactive) revert NotReactive(sender);
+        _;
+    }
+
     modifier onlyPoolManager() {
         if (msg.sender != address(poolManager)) revert NotPoolManager();
         _;
@@ -52,21 +71,24 @@ contract LaglessHook is IHooks, AbstractCallback {
 
     /// @param _poolManager Uniswap v4 PoolManager on this chain.
     /// @param _callbackProxy Reactive callback proxy on this chain.
-    /// @param _rvmId Address that deploys the reactive contract (its RVM ID). Set explicitly because this hook
-    ///        is deployed through a CREATE2 factory, so msg.sender is not the RVM owner.
+    /// @param _owner Deployer EOA (set explicitly: the hook is deployed via a CREATE2 factory, so msg.sender is not it).
     constructor(
         IPoolManager _poolManager,
         address _callbackProxy,
-        address _rvmId,
+        address _owner,
         uint24 _baseFee,
         uint24 _maxFee,
         uint32 _maxDuration
-    ) payable AbstractCallback(_callbackProxy) {
-        if (_rvmId == address(0) || _baseFee > _maxFee || _maxFee > LPFeeLibrary.MAX_LP_FEE || _maxDuration == 0) {
+    ) payable {
+        if (
+            _owner == address(0) || _callbackProxy == address(0) || _baseFee > _maxFee
+                || _maxFee > LPFeeLibrary.MAX_LP_FEE || _maxDuration == 0
+        ) {
             revert InvalidConfig();
         }
         poolManager = _poolManager;
-        rvm_id = _rvmId;
+        callbackProxy = _callbackProxy;
+        owner = _owner;
         baseFee = _baseFee;
         maxFee = _maxFee;
         maxDuration = _maxDuration;
@@ -78,14 +100,34 @@ contract LaglessHook is IHooks, AbstractCallback {
         p.beforeSwap = true;
     }
 
+    // ---------------------------------------------------------------- Setup / payments
+
+    /// @notice One-time binding to the LaglessReactive contract (its address is only known after it is deployed).
+    function setReactive(address _reactive) external {
+        if (msg.sender != owner) revert NotOwner();
+        if (reactive != address(0)) revert ReactiveAlreadySet();
+        if (_reactive == address(0)) revert InvalidConfig();
+        reactive = _reactive;
+        emit ReactiveSet(_reactive);
+    }
+
+    /// @notice Accept ETH used to pay Reactive callback fees.
+    receive() external payable {}
+
+    /// @notice Reactive's callback proxy collects callback fees from this contract's balance.
+    function pay(uint256 amount) external {
+        if (msg.sender != callbackProxy) revert NotCallbackProxy(msg.sender);
+        (bool ok,) = payable(msg.sender).call{value: amount}("");
+        if (!ok) revert TransferFailed();
+    }
+
     // ---------------------------------------------------------------- Reactive callbacks
 
     /// @notice Raise (or refresh) the shield for a pool. Called by the Reactive callback proxy.
-    /// @dev First argument is overwritten with the RVM ID by Reactive Network.
-    function setShield(address rvmId, PoolId poolId, uint24 fee, uint32 duration, uint160 refSqrtPriceX96)
+    /// @dev First argument is overwritten by Reactive Network with the address of the reactive contract.
+    function setShield(address sender, PoolId poolId, uint24 fee, uint32 duration, uint160 refSqrtPriceX96)
         external
-        authorizedSenderOnly
-        rvmIdOnly(rvmId)
+        onlyReactiveCallback(sender)
     {
         if (fee > maxFee) fee = maxFee;
         if (fee < baseFee) fee = baseFee;
@@ -96,7 +138,7 @@ contract LaglessHook is IHooks, AbstractCallback {
     }
 
     /// @notice Clear the shield once prices have converged. Called by the Reactive callback proxy.
-    function clearShield(address rvmId, PoolId poolId) external authorizedSenderOnly rvmIdOnly(rvmId) {
+    function clearShield(address sender, PoolId poolId) external onlyReactiveCallback(sender) {
         delete shields[poolId];
         emit ShieldCleared(poolId);
     }

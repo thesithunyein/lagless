@@ -16,10 +16,31 @@ import {ModifyLiquidityParams, SwapParams} from "@uniswap/v4-core/src/types/Pool
 import {PoolSwapTest} from "@uniswap/v4-core/src/test/PoolSwapTest.sol";
 import {PoolModifyLiquidityTest} from "@uniswap/v4-core/src/test/PoolModifyLiquidityTest.sol";
 import {TestERC20} from "@uniswap/v4-core/src/test/TestERC20.sol";
-import {IReactive} from "@reactive/interfaces/IReactive.sol";
+import {IOmniReactive, IOmniSystem, OmniReactiveBase} from "../src/omni/ReactiveOmni.sol";
 
 import {LaglessHook} from "../src/LaglessHook.sol";
 import {LaglessReactive} from "../src/LaglessReactive.sol";
+
+/// @dev Stand-in for the Reactive Omni system contract at 0x8888...8888.
+contract MockOmniSystem {
+    event Subscribed(uint256 chainId, address contractAddress, uint256 topic0, uint256 topic1);
+    event CallbackRequested(uint256 chainId, address recipient, uint64 gasLimit, bytes payload);
+
+    uint256 public subscriptions;
+
+    function subscribe(uint256 chainId, address c, uint256 t0, uint256 t1, uint256, uint256) external {
+        subscriptions++;
+        emit Subscribed(chainId, c, t0, t1);
+    }
+
+    function requestCallbackV_1_0(IOmniSystem.CallbackConfiguration_V_1_0 memory cfg) external {
+        emit CallbackRequested(cfg.chainId, cfg.recipient, cfg.gasLimit, cfg.payload);
+    }
+
+    function debt(address) external pure returns (uint256) {
+        return 0;
+    }
+}
 
 contract LaglessTest is Test {
     using PoolIdLibrary for PoolKey;
@@ -30,7 +51,7 @@ contract LaglessTest is Test {
     uint160 constant SQRT_1_1 = 79228162514264337593543950336; // 2^96
 
     address proxy = makeAddr("callbackProxy");
-    address rvm = makeAddr("rvmOwner");
+    address constant SYSTEM = 0x8888888888888888888888888888888888888888;
 
     PoolManager manager;
     PoolSwapTest swapRouter;
@@ -58,7 +79,7 @@ contract LaglessTest is Test {
         address hookAddr = address(uint160(Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_SWAP_FLAG) | (uint160(0x4444) << 144));
         deployCodeTo(
             "LaglessHook.sol:LaglessHook",
-            abi.encode(IPoolManager(address(manager)), proxy, rvm, BASE_FEE, MAX_FEE, MAX_DURATION),
+            abi.encode(IPoolManager(address(manager)), proxy, address(this), BASE_FEE, MAX_FEE, MAX_DURATION),
             hookAddr
         );
         hook = LaglessHook(payable(hookAddr));
@@ -89,8 +110,14 @@ contract LaglessTest is Test {
             shieldDuration: 10,
             callbackGasLimit: 300_000
         });
-        // No system contract at 0x...fffFfF in tests → constructor sees vm == true and skips subscribing.
+        vm.etch(SYSTEM, address(new MockOmniSystem()).code);
         reactive = new LaglessReactive(cfg, SQRT_1_1);
+        hook.setReactive(address(reactive));
+    }
+
+    function _react(IOmniReactive.LogRecord memory log) internal {
+        vm.prank(SYSTEM);
+        reactive.react(log);
     }
 
     // ---------------------------------------------------------------- helpers
@@ -108,12 +135,12 @@ contract LaglessTest is Test {
     function _swapLog(uint256 chainId, address pm, bytes32 poolId, uint160 sqrtPriceX96)
         internal
         pure
-        returns (IReactive.LogRecord memory log)
+        returns (IOmniReactive.LogRecord memory log)
     {
-        log.chain_id = chainId;
-        log._contract = pm;
-        log.topic_0 = 0x40e9cecb9f5f1f1c5b9c97dec2917b7ee92e57ba5563708daca94dd84ad7112f;
-        log.topic_1 = uint256(poolId);
+        log.chainId = chainId;
+        log.contractAddress = pm;
+        log.topic0 = 0x40e9cecb9f5f1f1c5b9c97dec2917b7ee92e57ba5563708daca94dd84ad7112f;
+        log.topic1 = uint256(poolId);
         log.data = abi.encode(int128(-1), int128(1), sqrtPriceX96, uint128(1), int24(0), uint24(3000));
     }
 
@@ -133,18 +160,18 @@ contract LaglessTest is Test {
         }
     }
 
-    /// @dev Takes the Callback emitted by the reactive contract and delivers it like Reactive Network would:
-    ///      from the callback proxy, with the first argument replaced by the RVM ID.
+    /// @dev Takes callbacks requested from the system contract and delivers them like Reactive Network would:
+    ///      from the callback proxy, with the first argument replaced by the reactive contract's address.
     function _deliverCallbacks(Vm.Log[] memory logs) internal returns (uint256 delivered) {
-        bytes32 cbTopic = keccak256("Callback(uint256,address,uint64,bytes)");
+        bytes32 cbTopic = keccak256("CallbackRequested(uint256,address,uint64,bytes)");
         for (uint256 i; i < logs.length; i++) {
             if (logs[i].topics[0] != cbTopic) continue;
-            bytes memory payload = abi.decode(logs[i].data, (bytes));
+            (,,, bytes memory payload) = abi.decode(logs[i].data, (uint256, address, uint64, bytes));
             bytes4 sel;
             assembly { sel := mload(add(payload, 32)) }
             bytes memory rest = new bytes(payload.length - 36);
             for (uint256 j; j < rest.length; j++) rest[j] = payload[36 + j];
-            bytes memory call = abi.encodePacked(sel, abi.encode(rvm), rest);
+            bytes memory call = abi.encodePacked(sel, abi.encode(address(reactive)), rest);
             vm.prank(proxy);
             (bool ok,) = address(hook).call(call);
             require(ok, "callback failed");
@@ -166,7 +193,7 @@ contract LaglessTest is Test {
 
     function test_shieldRaisesFeeAndCutsArbOutput() public {
         vm.prank(proxy);
-        hook.setShield(rvm, key.toId(), 8000, 10, SQRT_1_1);
+        hook.setShield(address(reactive), key.toId(), 8000, 10, SQRT_1_1);
         assertEq(hook.currentFee(key.toId()), 8000);
         int128 outLagless = _swap(key, -1e18);
         int128 outControl = _swap(controlKey, -1e18);
@@ -175,14 +202,14 @@ contract LaglessTest is Test {
 
     function test_shieldExpiresByTimestamp() public {
         vm.prank(proxy);
-        hook.setShield(rvm, key.toId(), 8000, 10, SQRT_1_1);
+        hook.setShield(address(reactive), key.toId(), 8000, 10, SQRT_1_1);
         vm.warp(block.timestamp + 10);
         assertEq(hook.currentFee(key.toId()), BASE_FEE);
     }
 
     function test_feeAndDurationAreCapped() public {
         vm.prank(proxy);
-        hook.setShield(rvm, key.toId(), 900_000, 3600, SQRT_1_1);
+        hook.setShield(address(reactive), key.toId(), 900_000, 3600, SQRT_1_1);
         (uint24 fee, uint40 expiry,) = hook.shields(key.toId());
         assertEq(fee, MAX_FEE);
         assertEq(expiry, block.timestamp + MAX_DURATION);
@@ -190,21 +217,42 @@ contract LaglessTest is Test {
 
     function test_clearShield() public {
         vm.startPrank(proxy);
-        hook.setShield(rvm, key.toId(), 8000, 10, SQRT_1_1);
-        hook.clearShield(rvm, key.toId());
+        hook.setShield(address(reactive), key.toId(), 8000, 10, SQRT_1_1);
+        hook.clearShield(address(reactive), key.toId());
         vm.stopPrank();
         assertEq(hook.currentFee(key.toId()), BASE_FEE);
     }
 
     function test_revert_notCallbackProxy() public {
-        vm.expectRevert("Authorized sender only");
-        hook.setShield(rvm, key.toId(), 8000, 10, SQRT_1_1);
+        vm.expectRevert(abi.encodeWithSelector(LaglessHook.NotCallbackProxy.selector, address(this)));
+        hook.setShield(address(reactive), key.toId(), 8000, 10, SQRT_1_1);
     }
 
-    function test_revert_wrongRvmId() public {
+    function test_revert_wrongReactiveSender() public {
         vm.prank(proxy);
-        vm.expectRevert("Authorized RVM ID only");
+        vm.expectRevert(abi.encodeWithSelector(LaglessHook.NotReactive.selector, address(0xBAD)));
         hook.setShield(address(0xBAD), key.toId(), 8000, 10, SQRT_1_1);
+    }
+
+    function test_revert_setReactiveOnlyOnce() public {
+        vm.expectRevert(LaglessHook.ReactiveAlreadySet.selector);
+        hook.setReactive(address(0xBEEF));
+    }
+
+    function test_revert_setReactiveOnlyOwner() public {
+        vm.prank(address(0xBAD));
+        vm.expectRevert(LaglessHook.NotOwner.selector);
+        hook.setReactive(address(0xBEEF));
+    }
+
+    function test_reactive_subscribesToBothPools() public view {
+        assertEq(MockOmniSystem(SYSTEM).subscriptions(), 2);
+    }
+
+    function test_revert_reactOnlySystem() public {
+        IOmniReactive.LogRecord memory log = _swapLog(84532, makeAddr("basePoolManager"), keccak256("basePool"), _sqrtForBps(60));
+        vm.expectRevert(abi.encodeWithSelector(OmniReactiveBase.NotSystem.selector, address(this)));
+        reactive.react(log);
     }
 
     function test_revert_staticFeePoolCannotUseHook() public {
@@ -225,14 +273,14 @@ contract LaglessTest is Test {
 
     function test_reactive_smallMoveDoesNothing() public {
         vm.recordLogs();
-        reactive.react(_swapLog(84532, makeAddr("basePoolManager"), keccak256("basePool"), _sqrtForBps(10)));
+        _react(_swapLog(84532, makeAddr("basePoolManager"), keccak256("basePool"), _sqrtForBps(10)));
         assertEq(_deliverCallbacks(vm.getRecordedLogs()), 0);
         assertEq(reactive.lastSentFee(), 0);
     }
 
     function test_reactive_ignoresUnknownPool() public {
         vm.recordLogs();
-        reactive.react(_swapLog(84532, makeAddr("basePoolManager"), keccak256("otherPool"), _sqrtForBps(500)));
+        _react(_swapLog(84532, makeAddr("basePoolManager"), keccak256("otherPool"), _sqrtForBps(500)));
         assertEq(_deliverCallbacks(vm.getRecordedLogs()), 0);
     }
 
@@ -242,7 +290,7 @@ contract LaglessTest is Test {
 
         // 1. Base price moves +60 bps → shield = 3000 + 50*60 = 6000 pips
         vm.recordLogs();
-        reactive.react(_swapLog(84532, makeAddr("basePoolManager"), keccak256("basePool"), _sqrtForBps(60)));
+        _react(_swapLog(84532, makeAddr("basePoolManager"), keccak256("basePool"), _sqrtForBps(60)));
         assertEq(_deliverCallbacks(vm.getRecordedLogs()), 1);
         uint24 fee = hook.currentFee(key.toId());
         assertApproxEqAbs(fee, 6000, 100);
@@ -252,7 +300,7 @@ contract LaglessTest is Test {
 
         // 3. Unichain price converges to Base → reactive clears the shield
         vm.recordLogs();
-        reactive.react(_swapLog(1301, address(manager), destPoolId, _sqrtForBps(59)));
+        _react(_swapLog(1301, address(manager), destPoolId, _sqrtForBps(59)));
         assertEq(_deliverCallbacks(vm.getRecordedLogs()), 1);
         assertEq(hook.currentFee(key.toId()), BASE_FEE);
         assertEq(reactive.lastSentFee(), 0);
@@ -260,7 +308,7 @@ contract LaglessTest is Test {
 
     function test_reactive_feeCappedAtMax() public {
         vm.recordLogs();
-        reactive.react(_swapLog(84532, makeAddr("basePoolManager"), keccak256("basePool"), _sqrtForBps(2000)));
+        _react(_swapLog(84532, makeAddr("basePoolManager"), keccak256("basePool"), _sqrtForBps(2000)));
         _deliverCallbacks(vm.getRecordedLogs());
         assertEq(hook.currentFee(key.toId()), MAX_FEE);
     }

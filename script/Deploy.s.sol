@@ -11,11 +11,13 @@ import {PoolId, PoolIdLibrary} from "@uniswap/v4-core/src/types/PoolId.sol";
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {ModifyLiquidityParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
 import {PoolModifyLiquidityTest} from "@uniswap/v4-core/src/test/PoolModifyLiquidityTest.sol";
+import {StateLibrary} from "@uniswap/v4-core/src/libraries/StateLibrary.sol";
 import {HookMiner} from "@uniswap/v4-periphery/test/shared/HookMiner.sol";
 
 import {MockToken} from "../src/test/MockToken.sol";
 import {LaglessHook} from "../src/LaglessHook.sol";
 import {LaglessReactive} from "../src/LaglessReactive.sol";
+import {IOmniSystem} from "../src/omni/ReactiveOmni.sol";
 import {Config} from "./Config.sol";
 
 abstract contract LaglessScript is Script {
@@ -75,17 +77,18 @@ contract DeployBasePool is LaglessScript {
 /// @notice Step 3 — Unichain Sepolia: LaglessHook + Lagless pool (dynamic fee) + control pool (static 0.30%).
 contract DeployUnichain is LaglessScript {
     using PoolIdLibrary for PoolKey;
+    using StateLibrary for IPoolManager;
 
     function run() external {
         require(block.chainid == Config.UNICHAIN_SEPOLIA, "run on Unichain Sepolia");
-        address rvmId = vm.envAddress("DEPLOYER"); // the EOA that will deploy LaglessReactive on Reactive
+        address owner = vm.envAddress("DEPLOYER"); // may call hook.setReactive() once
         uint256 funding = vm.envOr("HOOK_FUNDING_WEI", uint256(0.01 ether)); // pays Reactive callback fees
 
         uint160 flags = uint160(Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_SWAP_FLAG);
         bytes memory args = abi.encode(
             IPoolManager(Config.UNI_POOL_MANAGER),
             Config.UNI_CALLBACK_PROXY,
-            rvmId,
+            owner,
             Config.BASE_FEE,
             Config.MAX_FEE,
             Config.MAX_SHIELD_DURATION
@@ -99,7 +102,7 @@ contract DeployUnichain is LaglessScript {
         LaglessHook hook = new LaglessHook{salt: salt, value: funding}(
             IPoolManager(Config.UNI_POOL_MANAGER),
             Config.UNI_CALLBACK_PROXY,
-            rvmId,
+            owner,
             Config.BASE_FEE,
             Config.MAX_FEE,
             Config.MAX_SHIELD_DURATION
@@ -108,12 +111,15 @@ contract DeployUnichain is LaglessScript {
 
         PoolKey memory lagless = PoolKey(c0, c1, LPFeeLibrary.DYNAMIC_FEE_FLAG, Config.TICK_SPACING, IHooks(address(hook)));
         PoolKey memory control = PoolKey(c0, c1, Config.STATIC_FEE, Config.TICK_SPACING, IHooks(address(0)));
-        IPoolManager(Config.UNI_POOL_MANAGER).initialize(lagless, Config.SQRT_PRICE_1_1);
-        IPoolManager(Config.UNI_POOL_MANAGER).initialize(control, Config.SQRT_PRICE_1_1);
+        IPoolManager pm = IPoolManager(Config.UNI_POOL_MANAGER);
+        // The control pool has no hook, so it is shared across redeploys; only create it once.
+        (uint160 controlPrice,,,) = pm.getSlot0(control.toId());
+        pm.initialize(lagless, Config.SQRT_PRICE_1_1);
+        if (controlPrice == 0) pm.initialize(control, Config.SQRT_PRICE_1_1);
         _approve(Config.UNI_LP_ROUTER);
         _approve(Config.UNI_SWAP_ROUTER);
         PoolModifyLiquidityTest(Config.UNI_LP_ROUTER).modifyLiquidity(lagless, LP, "");
-        PoolModifyLiquidityTest(Config.UNI_LP_ROUTER).modifyLiquidity(control, LP, "");
+        if (controlPrice == 0) PoolModifyLiquidityTest(Config.UNI_LP_ROUTER).modifyLiquidity(control, LP, "");
         vm.stopBroadcast();
 
         console2.log("HOOK=%s", address(hook));
@@ -124,14 +130,9 @@ contract DeployUnichain is LaglessScript {
     }
 }
 
-interface IReactiveLedger {
-    function depositTo(address target) external payable;
-}
-
-/// @notice Step 4 — Reactive (Lasna): LaglessReactive subscribed to both pools.
-/// Must be broadcast by DEPLOYER (its address is the RVM ID the hook trusts).
+/// @notice Step 4 — Reactive Omni (Lasna): LaglessReactive subscribed to both pools.
 contract DeployReactive is Script {
-    address internal constant OMNI_SYSTEM = 0x8888888888888888888888888888888888888888;
+    IOmniSystem internal constant SYSTEM = IOmniSystem(0x8888888888888888888888888888888888888888);
 
     function run() external {
         LaglessReactive.Config memory cfg = LaglessReactive.Config({
@@ -152,15 +153,26 @@ contract DeployReactive is Script {
             shieldDuration: Config.SHIELD_DURATION,
             callbackGasLimit: Config.CALLBACK_GAS_LIMIT
         });
-        uint256 funding = vm.envOr("REACTIVE_FUNDING_WEI", uint256(1 ether)); // lREACT for reactive tx fees
+        uint256 balance = vm.envOr("REACTIVE_FUNDING_WEI", uint256(0)); // optional: lets SYSTEM pull fees via pay()
+        uint256 reserves = vm.envOr("OMNI_RESERVE_WEI", uint256(0.1 ether)); // prepaid fees on the Omni ledger
 
         vm.startBroadcast();
-        require(msg.sender == vm.envAddress("DEPLOYER"), "broadcast with DEPLOYER");
-        LaglessReactive r = new LaglessReactive{value: funding}(cfg, Config.SQRT_PRICE_1_1);
-        // Subscribing creates a debt on the Omni ledger (0x8888...). Any debt makes subscriptions INACTIVE,
-        // so pre-fund the contract's Omni reserves: depositTo settles debt first, the rest becomes reserves.
-        IReactiveLedger(OMNI_SYSTEM).depositTo{value: vm.envOr("OMNI_RESERVE_WEI", uint256(0.1 ether))}(address(r));
+        LaglessReactive r = new LaglessReactive{value: balance}(cfg, Config.SQRT_PRICE_1_1);
+        // Subscribing creates Omni debt, and any debt makes subscriptions INACTIVE. depositTo settles the
+        // debt first and keeps the rest as reserves that pay for future reactions and callbacks.
+        if (reserves > 0) SYSTEM.depositTo{value: reserves}(address(r));
         vm.stopBroadcast();
         console2.log("REACTIVE=%s", address(r));
+    }
+}
+
+/// @notice Step 5 — Unichain Sepolia: bind the hook to the reactive contract (one-time, owner only).
+contract SetReactive is Script {
+    function run() external {
+        require(block.chainid == Config.UNICHAIN_SEPOLIA, "run on Unichain Sepolia");
+        vm.startBroadcast();
+        LaglessHook(payable(vm.envAddress("HOOK"))).setReactive(vm.envAddress("REACTIVE"));
+        vm.stopBroadcast();
+        console2.log("Hook now accepts callbacks from REACTIVE=%s", vm.envAddress("REACTIVE"));
     }
 }

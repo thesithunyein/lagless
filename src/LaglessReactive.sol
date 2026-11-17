@@ -1,22 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import {AbstractReactive} from "@reactive/abstract-base/AbstractReactive.sol";
+import {OmniReactiveBase, IOmniSystem} from "./omni/ReactiveOmni.sol";
 
 /// @title LaglessReactive
 /// @notice Runs on Reactive Network. Watches the same Uniswap v4 pair on a "leading" chain (Base) and a
 ///         "lagging" chain (Unichain). When the leading price moves away from the lagging pool's price, it
 ///         sends a callback that raises the lagging pool's LP fee; when prices converge again it clears it.
 /// @dev All decision logic lives here: price decoding, deviation, fee curve, raise/refresh/clear.
-contract LaglessReactive is AbstractReactive {
+contract LaglessReactive is OmniReactiveBase {
     /// @dev keccak256("Swap(bytes32,address,int128,int128,uint160,uint128,int24,uint24)") — Uniswap v4 PoolManager.
     uint256 public constant SWAP_TOPIC_0 = 0x40e9cecb9f5f1f1c5b9c97dec2917b7ee92e57ba5563708daca94dd84ad7112f;
     uint256 internal constant ONE = 1e18;
     uint256 internal constant Q192 = 1 << 192;
     uint256 internal constant LP_FEE_DENOMINATOR = 1_000_000;
-    /// @dev Reactive Omni system contract (fees/debt ledger). reactive-lib only authorizes the legacy 0x...fffFfF
-    ///      service, so without this the Omni ledger can't auto-collect fees via pay() and the contract goes INACTIVE.
-    address internal constant OMNI_SYSTEM = 0x8888888888888888888888888888888888888888;
 
     struct Config {
         uint256 originChainId; // leading chain (Base Sepolia: 84532)
@@ -39,9 +36,12 @@ contract LaglessReactive is AbstractReactive {
 
     event ShieldDecision(uint256 deviationBps, uint24 fee, bool raised, bool cleared);
 
-    Config public cfg;
+    error NotOwner();
 
-    // ReactVM state
+    Config public cfg;
+    address public immutable owner;
+
+    // Contract state (Omni: single instance, no ReactVM copy)
     uint160 public originSqrtPriceX96;
     uint160 public destSqrtPriceX96; // already in origin orientation
     uint24 public lastSentFee; // 0 = no active shield as far as this contract knows
@@ -49,38 +49,32 @@ contract LaglessReactive is AbstractReactive {
     constructor(Config memory _cfg, uint160 initialDestSqrtPriceX96) payable {
         require(_cfg.baseFee <= _cfg.maxFee && _cfg.clearBps < _cfg.triggerBps, "bad config");
         cfg = _cfg;
-        addAuthorizedSender(OMNI_SYSTEM);
+        owner = msg.sender;
         destSqrtPriceX96 = _orient(initialDestSqrtPriceX96, _cfg.invertDest);
 
-        if (!vm) {
-            service.subscribe(
-                _cfg.originChainId,
-                _cfg.originPoolManager,
-                SWAP_TOPIC_0,
-                uint256(_cfg.originPoolId),
-                REACTIVE_IGNORE,
-                REACTIVE_IGNORE
-            );
-            service.subscribe(
-                _cfg.destChainId,
-                _cfg.destPoolManager,
-                SWAP_TOPIC_0,
-                uint256(_cfg.destPoolId),
-                REACTIVE_IGNORE,
-                REACTIVE_IGNORE
-            );
-        }
+        SYSTEM.subscribe(
+            _cfg.originChainId, _cfg.originPoolManager, SWAP_TOPIC_0, uint256(_cfg.originPoolId), REACTIVE_IGNORE, REACTIVE_IGNORE
+        );
+        SYSTEM.subscribe(
+            _cfg.destChainId, _cfg.destPoolManager, SWAP_TOPIC_0, uint256(_cfg.destPoolId), REACTIVE_IGNORE, REACTIVE_IGNORE
+        );
     }
 
-    /// @notice Entry point called by Reactive Network for every subscribed Swap log (runs inside the ReactVM).
-    function react(LogRecord calldata log) external vmOnly {
-        if (log.topic_0 != SWAP_TOPIC_0) return;
+    /// @notice Recover this contract's lREACT (testnet convenience for redeploys). Does not touch any pool or LP funds.
+    function withdraw(address payable to, uint256 amount) external {
+        if (msg.sender != owner) revert NotOwner();
+        _send(to, amount);
+    }
+
+    /// @notice Called by the Omni system contract for every subscribed Swap log.
+    function react(LogRecord calldata log) external onlySystem {
+        if (log.topic0 != SWAP_TOPIC_0) return;
         (,, uint160 sqrtPriceX96,,,) = abi.decode(log.data, (int128, int128, uint160, uint128, int24, uint24));
         Config memory c = cfg;
 
-        if (log.chain_id == c.originChainId && log._contract == c.originPoolManager && bytes32(log.topic_1) == c.originPoolId) {
+        if (log.chainId == c.originChainId && log.contractAddress == c.originPoolManager && bytes32(log.topic1) == c.originPoolId) {
             originSqrtPriceX96 = sqrtPriceX96;
-        } else if (log.chain_id == c.destChainId && log._contract == c.destPoolManager && bytes32(log.topic_1) == c.destPoolId) {
+        } else if (log.chainId == c.destChainId && log.contractAddress == c.destPoolManager && bytes32(log.topic1) == c.destPoolId) {
             destSqrtPriceX96 = _orient(sqrtPriceX96, c.invertDest);
         } else {
             return;
@@ -93,25 +87,25 @@ contract LaglessReactive is AbstractReactive {
             uint24 fee = feeFor(dev, c);
             // Refresh on every qualifying origin move (keeps the destination expiry alive),
             // but skip destination-side swaps that don't change the fee meaningfully.
-            bool fromOrigin = log.chain_id == c.originChainId;
+            bool fromOrigin = log.chainId == c.originChainId;
             if (fromOrigin || lastSentFee == 0 || _absDiff(fee, lastSentFee) >= c.feeStep) {
                 lastSentFee = fee;
                 bytes memory payload = abi.encodeWithSignature(
                     "setShield(address,bytes32,uint24,uint32,uint160)",
-                    address(0), // replaced with the RVM ID by Reactive Network
+                    address(0), // replaced with this contract's address by Reactive Network
                     c.destPoolId,
                     fee,
                     c.shieldDuration,
                     originSqrtPriceX96
                 );
-                emit Callback(c.destChainId, c.hook, c.callbackGasLimit, payload);
+                _callback(c, payload);
                 emit ShieldDecision(dev, fee, true, false);
             }
         } else if (dev <= c.clearBps && lastSentFee != 0) {
             lastSentFee = 0;
             bytes memory payload =
                 abi.encodeWithSignature("clearShield(address,bytes32)", address(0), c.destPoolId);
-            emit Callback(c.destChainId, c.hook, c.callbackGasLimit, payload);
+            _callback(c, payload);
             emit ShieldDecision(dev, 0, false, true);
         }
     }
@@ -132,6 +126,10 @@ contract LaglessReactive is AbstractReactive {
         if (dev > LP_FEE_DENOMINATOR) dev = LP_FEE_DENOMINATOR; // bound the multiplication below
         uint256 fee = uint256(c.baseFee) + uint256(c.slopePipsPerBp) * dev;
         return fee > c.maxFee ? c.maxFee : uint24(fee);
+    }
+
+    function _callback(Config memory c, bytes memory payload) internal {
+        SYSTEM.requestCallbackV_1_0(IOmniSystem.CallbackConfiguration_V_1_0(c.destChainId, c.hook, c.callbackGasLimit, payload));
     }
 
     function _orient(uint160 sqrtPriceX96, bool invert) internal pure returns (uint160) {
