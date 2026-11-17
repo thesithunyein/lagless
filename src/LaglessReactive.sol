@@ -14,6 +14,9 @@ contract LaglessReactive is AbstractReactive {
     uint256 internal constant ONE = 1e18;
     uint256 internal constant Q192 = 1 << 192;
     uint256 internal constant LP_FEE_DENOMINATOR = 1_000_000;
+    /// @dev Reactive Omni system contract (fees/debt ledger). reactive-lib only authorizes the legacy 0x...fffFfF
+    ///      service, so without this the Omni ledger can't auto-collect fees via pay() and the contract goes INACTIVE.
+    address internal constant OMNI_SYSTEM = 0x8888888888888888888888888888888888888888;
 
     struct Config {
         uint256 originChainId; // leading chain (Base Sepolia: 84532)
@@ -46,6 +49,7 @@ contract LaglessReactive is AbstractReactive {
     constructor(Config memory _cfg, uint160 initialDestSqrtPriceX96) payable {
         require(_cfg.baseFee <= _cfg.maxFee && _cfg.clearBps < _cfg.triggerBps, "bad config");
         cfg = _cfg;
+        addAuthorizedSender(OMNI_SYSTEM);
         destSqrtPriceX96 = _orient(initialDestSqrtPriceX96, _cfg.invertDest);
 
         if (!vm) {

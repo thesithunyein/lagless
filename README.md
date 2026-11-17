@@ -80,11 +80,13 @@ forge script script/Deploy.s.sol:DeployUnichain --rpc-url $UNICHAIN_SEPOLIA_RPC 
 forge script script/Deploy.s.sol:DeployReactive --rpc-url $LASNA_RPC --private-key $PRIVATE_KEY --broadcast
 ```
 
-If the reactive contract's subscriptions show **INACTIVE** on Reactscan, the contract has unpaid debt. Pay it from the contract's own balance:
+If the reactive contract's subscriptions show **INACTIVE** on Reactscan, the contract has debt on the **Omni** ledger (`0x8888…8888`). Top up its Omni reserves; `depositTo` settles the debt first:
 
 ```bash
-cast send $REACTIVE "coverDebt()" --rpc-url $LASNA_RPC --private-key $PRIVATE_KEY
+cast send 0x8888888888888888888888888888888888888888 "depositTo(address)" $REACTIVE --value 0.1ether --rpc-url $LASNA_RPC --private-key $PRIVATE_KEY
 ```
+
+Note: depositing to the legacy service `0x…fffFfF` or calling `coverDebt()` (reactive-lib's default vendor) does **not** clear Omni-era debt.
 
 ## Demo loop
 

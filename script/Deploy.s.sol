@@ -124,9 +124,15 @@ contract DeployUnichain is LaglessScript {
     }
 }
 
+interface IReactiveLedger {
+    function depositTo(address target) external payable;
+}
+
 /// @notice Step 4 — Reactive (Lasna): LaglessReactive subscribed to both pools.
 /// Must be broadcast by DEPLOYER (its address is the RVM ID the hook trusts).
 contract DeployReactive is Script {
+    address internal constant OMNI_SYSTEM = 0x8888888888888888888888888888888888888888;
+
     function run() external {
         LaglessReactive.Config memory cfg = LaglessReactive.Config({
             originChainId: Config.BASE_SEPOLIA,
@@ -151,8 +157,9 @@ contract DeployReactive is Script {
         vm.startBroadcast();
         require(msg.sender == vm.envAddress("DEPLOYER"), "broadcast with DEPLOYER");
         LaglessReactive r = new LaglessReactive{value: funding}(cfg, Config.SQRT_PRICE_1_1);
-        // Subscribing creates a small debt on Reactive; subscriptions stay INACTIVE until it is paid.
-        r.coverDebt();
+        // Subscribing creates a debt on the Omni ledger (0x8888...). Any debt makes subscriptions INACTIVE,
+        // so pre-fund the contract's Omni reserves: depositTo settles debt first, the rest becomes reserves.
+        IReactiveLedger(OMNI_SYSTEM).depositTo{value: vm.envOr("OMNI_RESERVE_WEI", uint256(0.1 ether))}(address(r));
         vm.stopBroadcast();
         console2.log("REACTIVE=%s", address(r));
     }
