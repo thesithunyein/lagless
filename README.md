@@ -110,13 +110,24 @@ POOL=control AMOUNT=... ZERO_FOR_ONE=true forge script script/Swap.s.sol:Swap --
 
 ## Deployed addresses and transactions
 
-_To be filled after testnet deployment._
-
 | Item | Address / tx |
 |---|---|
-| LaglessReactive (Lasna) | |
-| LaglessHook (Unichain Sepolia) | |
-| Full loop: Base swap → Reactive tx → Unichain callback | |
+| Tokens lWETH / lUSDC (same address on Base + Unichain Sepolia) | `0x9063cE4EBFBA81206E621158B7586024eeC6d0B3` / `0x41eFe7a3A065a5094Eb88c9F486238Fc227E7893` |
+| Base Sepolia source pool id | `0xba49af2a7fd75f159181a85b3a2dabff571a9ea24eba7cc3bf943f5d9b512ffd` |
+| LaglessReactive (Reactive Omni, Lasna) | [`0x1eee3853d5C0dEB9702eC4e7EEd205ff58d878e5`](https://lasna.reactscan.net/address/0x1eee3853d5C0dEB9702eC4e7EEd205ff58d878e5) |
+| LaglessHook (Unichain Sepolia) | [`0x03A696938EF795a0B1496FC407CF7B53F4702080`](https://sepolia.uniscan.xyz/address/0x03A696938EF795a0B1496FC407CF7B53F4702080) |
+| Lagless pool id (Unichain, dynamic fee) | `0x5c20493e45711a98dd4fd618626e5dd17b13d3c3d68690c9a4c7c70460bcbfd9` |
+| Control pool id (Unichain, static 0.30%) | `0xba49af2a7fd75f159181a85b3a2dabff571a9ea24eba7cc3bf943f5d9b512ffd` |
+
+### First live loop (Nov 17, 2026)
+
+| Step | Chain | Tx | Block time |
+|---|---|---|---|
+| 1. Swap moves the price | Base Sepolia | [`0x4a7debcf…fd0a2b`](https://sepolia.basescan.org/tx/0x4a7debcfbb53a749d61c496c76f26bc7bac32b839cf79064dadd33c648fd0a2b) | 1794911210 |
+| 2. `react()` decides, requests callback | Reactive Omni | [`0xedc886a7…420f9f`](https://lasna.reactscan.net/tx/0xedc886a79064459e38ec3e2372d8fd51c024054065f8bfdad268726178420f9f) | 1794911210 |
+| 3. `setShield` raises the LP fee to 1.00% | Unichain Sepolia | [`0x77ec25f3…d2480`](https://sepolia.uniscan.xyz/tx/0x77ec25f373f91e53071b8ca7162e940ad0ee758d0bcbb66dfe366737d65d2480) | 1794911212 |
+
+Base swap → Unichain fee change: **2 s** (block timestamps, 1 s resolution).
 
 ## Results
 
