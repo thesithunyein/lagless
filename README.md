@@ -108,6 +108,17 @@ POOL=lagless AMOUNT=... ZERO_FOR_ONE=true forge script script/Swap.s.sol:Swap --
 POOL=control AMOUNT=... ZERO_FOR_ONE=true forge script script/Swap.s.sol:Swap --rpc-url $UNICHAIN_SEPOLIA_RPC --private-key $PRIVATE_KEY --broadcast
 ```
 
+## Live rounds (automated)
+
+`script/rounds.py` runs full rounds and appends one row per round to `results.csv`: Base move → wait for the shield on Unichain (latency) → the same arbitrage trade on the Lagless pool and on the control pool (LP fee collected by each).
+
+```bash
+python3 script/rounds.py --sync 150   # one-time: align the Unichain pools with the Base price
+python3 script/rounds.py 20           # 20 rounds, alternating direction
+```
+
+It signs with the Foundry keystore account `lagless` and asks for the password once per run.
+
 ## Deployed addresses and transactions
 
 | Item | Address / tx |
