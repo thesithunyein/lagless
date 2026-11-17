@@ -5,13 +5,26 @@
   </picture>
 </p>
 
-# Lagless
+<h3 align="center">Arbitrage should pay your LPs</h3>
 
-**Arbitrage pays LPs.** A Uniswap v4 pool on Unichain whose LP fee goes up about a second after the same pair moves on Base, so trades against the stale price pay LPs more.
+<p align="center">
+  Lagless raises a Uniswap v4 pool's fee on Unichain about two seconds after the same pair moves on Base,<br>
+  then lowers it again when prices match. Fully on-chain, powered by Reactive Network.
+</p>
 
-Built for the Reactive Omni Buildathon, track **Every Second Counts**.
+<p align="center">
+  <a href="https://lagless-sithunyein.vercel.app"><b>Website</b></a> ·
+  <a href="#how-it-works">How it works</a> ·
+  <a href="#results">Results</a> ·
+  <a href="#deploy-testnets-0">Deploy</a> ·
+  <a href="#deployed-addresses-and-transactions">Contracts</a>
+</p>
 
-**Live dashboard:** https://lagless-sithunyein.vercel.app (reads Base Sepolia and Unichain Sepolia directly in your browser)
+<p align="center">
+  <img alt="Tests" src="https://img.shields.io/badge/tests-19%20passing-101828">
+  <img alt="Median latency" src="https://img.shields.io/badge/median%20latency-2s-3D4FF2">
+  <img alt="License" src="https://img.shields.io/badge/license-MIT-101828">
+</p>
 
 ## Problem
 
@@ -178,3 +191,7 @@ What this shows: an arbitrage that lands about 2 s or more after the Base move p
 ## License
 
 MIT
+
+## Background
+
+Lagless was first built for the Reactive Omni Buildathon (track: Every Second Counts).
