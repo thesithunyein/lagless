@@ -4,6 +4,8 @@
 
 Built for the Reactive Omni Buildathon, track **Every Second Counts**.
 
+**Live dashboard:** https://lagless-sithunyein.vercel.app (reads Base Sepolia and Unichain Sepolia directly in your browser)
+
 ## Problem
 
 The same pair trades on Base and Unichain. When the price moves on Base, the Unichain pool keeps quoting the old price until someone arbitrages it. That gap is profit for the arbitrageur, paid by LPs (loss-versus-rebalancing, LVR).
