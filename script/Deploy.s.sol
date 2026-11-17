@@ -151,6 +151,8 @@ contract DeployReactive is Script {
         vm.startBroadcast();
         require(msg.sender == vm.envAddress("DEPLOYER"), "broadcast with DEPLOYER");
         LaglessReactive r = new LaglessReactive{value: funding}(cfg, Config.SQRT_PRICE_1_1);
+        // Subscribing creates a small debt on Reactive; subscriptions stay INACTIVE until it is paid.
+        r.coverDebt();
         vm.stopBroadcast();
         console2.log("REACTIVE=%s", address(r));
     }

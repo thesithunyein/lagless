@@ -80,6 +80,12 @@ forge script script/Deploy.s.sol:DeployUnichain --rpc-url $UNICHAIN_SEPOLIA_RPC 
 forge script script/Deploy.s.sol:DeployReactive --rpc-url $LASNA_RPC --private-key $PRIVATE_KEY --broadcast
 ```
 
+If the reactive contract's subscriptions show **INACTIVE** on Reactscan, the contract has unpaid debt. Pay it from the contract's own balance:
+
+```bash
+cast send $REACTIVE "coverDebt()" --rpc-url $LASNA_RPC --private-key $PRIVATE_KEY
+```
+
 ## Demo loop
 
 ```bash
