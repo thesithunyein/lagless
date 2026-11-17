@@ -10,7 +10,8 @@ Rounds alternate direction so prices oscillate around the start instead of drift
 
 Usage (PowerShell or bash, from the repo root, after loading .env):
   python script/rounds.py --sync 150     # one-time: catch the Unichain pools up to the Base price
-  python script/rounds.py 20             # run 20 rounds
+  python script/rounds.py 20             # run 20 rounds (arbitrage after the shield lands)
+  python script/rounds.py 10 --race      # 10 rounds where the arbitrage fires immediately
   python script/rounds.py 5 --amount 20  # 5 rounds of 20-token swaps
   python script/rounds.py --sync 20 --only control   # repair: one catch-up swap on a single pool
 
@@ -32,7 +33,7 @@ DYNAMIC_FEE = 8388608
 SWAP_SIG = "swap((address,address,uint24,int24,address),(bool,int256,uint160),(bool,bool),bytes)"
 SHIELD_SIG = "ShieldRaised(bytes32,uint24,uint40,uint160)"
 CSV_PATH = "results.csv"
-FIELDS = ["round", "direction", "amount_tokens", "base_tx", "callback_tx", "origin_ts", "callback_ts", "latency_s",
+FIELDS = ["round", "mode", "direction", "amount_tokens", "base_tx", "callback_tx", "origin_ts", "callback_ts", "latency_s",
           "shield_fee_pips", "lagless_tx", "lagless_fee_pips", "lagless_lp_fee", "control_tx", "control_fee_pips",
           "control_lp_fee"]
 
@@ -117,6 +118,8 @@ def main():
     ap.add_argument("--sync", type=float, help="only swap AMOUNT tokens token0->token1 on both Unichain pools")
     ap.add_argument("--only", choices=["lagless", "control"], help="with --sync: swap just one pool")
     ap.add_argument("--reverse", action="store_true", help="with --sync: swap token1->token0 instead")
+    ap.add_argument("--race", action="store_true",
+                    help="arbitrage right after the Base swap, without waiting for the shield (fast-arb case)")
     ap.add_argument("--timeout", type=int, default=45)
     a = ap.parse_args()
 
@@ -138,6 +141,16 @@ def main():
             print(f"sync {name}: {s['tx']}  fee={s['fee']}")
         return
 
+    if os.path.exists(CSV_PATH):
+        with open(CSV_PATH) as f:
+            old = list(csv.DictReader(f))
+        if old and "mode" not in old[0]:  # files written before --race existed
+            with open(CSV_PATH, "w", newline="") as f:
+                w = csv.DictWriter(f, fieldnames=FIELDS)
+                w.writeheader()
+                for r in old:
+                    r["mode"] = "after-shield"
+                    w.writerow({k: r.get(k, "") for k in FIELDS})
     new_file = not os.path.exists(CSV_PATH)
     start = 1
     if not new_file:
@@ -153,13 +166,19 @@ def main():
             zfo = i % 2 == 0  # alternate direction each round
             uni_from = int(cast("block-number", "--rpc-url", uni_rpc))
             base = swap(base_rpc, BASE_ROUTER, BASE_PM, base_id, base_key, zfo, amt)
-            shield = wait_shield(hook, uni_rpc, uni_from, base["sqrt"], a.timeout)
-            lag = swap(uni_rpc, UNI_ROUTER, UNI_PM, lag_id, lag_key, zfo, amt)
-            ctl = swap(uni_rpc, UNI_ROUTER, UNI_PM, ctl_id, ctl_key, zfo, amt)
+            if a.race:
+                # Fast arbitrageur: trade as soon as the Base swap is confirmed, before the shield can land.
+                lag = swap(uni_rpc, UNI_ROUTER, UNI_PM, lag_id, lag_key, zfo, amt)
+                ctl = swap(uni_rpc, UNI_ROUTER, UNI_PM, ctl_id, ctl_key, zfo, amt)
+                shield = wait_shield(hook, uni_rpc, uni_from, base["sqrt"], a.timeout)
+            else:
+                shield = wait_shield(hook, uni_rpc, uni_from, base["sqrt"], a.timeout)
+                lag = swap(uni_rpc, UNI_ROUTER, UNI_PM, lag_id, lag_key, zfo, amt)
+                ctl = swap(uni_rpc, UNI_ROUTER, UNI_PM, ctl_id, ctl_key, zfo, amt)
             origin_ts = block_ts(base["block"], base_rpc)
             cb_ts = block_ts(shield["block"], uni_rpc) if shield else ""
             row = {
-                "round": i, "direction": "0->1" if zfo else "1->0", "amount_tokens": a.amount,
+                "round": i, "mode": "race" if a.race else "after-shield", "direction": "0->1" if zfo else "1->0", "amount_tokens": a.amount,
                 "base_tx": base["tx"], "callback_tx": shield["tx"] if shield else "",
                 "origin_ts": origin_ts, "callback_ts": cb_ts,
                 "latency_s": (cb_ts - origin_ts) if shield else "",
@@ -176,13 +195,18 @@ def main():
                   + ("" if shield else "  (no shield: move below trigger or reactive out of funds)"))
 
     with open(CSV_PATH) as f:
-        rows = list(csv.DictReader(f))
-    lat = [float(r["latency_s"]) for r in rows if r["latency_s"]]
-    lag_fees = sum(float(r["lagless_lp_fee"]) for r in rows)
-    ctl_fees = sum(float(r["control_lp_fee"]) for r in rows)
-    print(f"\n{len(rows)} rounds | shield hit {len(lat)}/{len(rows)} | median latency "
-          f"{statistics.median(lat) if lat else 'n/a'}s | LP fees Lagless {lag_fees:.4f} vs control {ctl_fees:.4f}"
-          + (f" | uplift {100 * (lag_fees / ctl_fees - 1):.0f}%" if ctl_fees else ""))
+        all_rows = list(csv.DictReader(f))
+    print()
+    for mode in ("after-shield", "race"):
+        rows = [r for r in all_rows if r.get("mode", "after-shield") == mode]
+        if not rows:
+            continue
+        lat = [float(r["latency_s"]) for r in rows if r["latency_s"]]
+        lag_fees = sum(float(r["lagless_lp_fee"]) for r in rows)
+        ctl_fees = sum(float(r["control_lp_fee"]) for r in rows)
+        print(f"[{mode}] {len(rows)} rounds | shield hit {len(lat)}/{len(rows)} | median latency "
+              f"{statistics.median(lat) if lat else 'n/a'}s | LP fees Lagless {lag_fees:.4f} vs control {ctl_fees:.4f}"
+              + (f" | uplift {100 * (lag_fees / ctl_fees - 1):.0f}%" if ctl_fees else ""))
 
 
 if __name__ == "__main__":
