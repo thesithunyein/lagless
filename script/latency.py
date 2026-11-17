@@ -20,6 +20,12 @@ def cast(*args):
     return subprocess.check_output(["cast", *args], text=True).strip()
 
 
+def block_ts(block, rpc):
+    # Handles decimal, hex, or "1700000000 (human-readable date)" output across cast versions.
+    out = cast("block", str(block), "--field", "timestamp", "--rpc-url", rpc)
+    return int(out.split()[0], 0)
+
+
 def main():
     if len(sys.argv) < 2:
         sys.exit(__doc__)
@@ -31,7 +37,7 @@ def main():
     swap = next(l for l in receipt["logs"] if l["address"].lower() == BASE_PM and l["topics"][0] == SWAP_TOPIC)
     data = swap["data"][2:]
     sqrt_price = int(data[64 * 2:64 * 3], 16)  # 3rd word: sqrtPriceX96
-    origin_ts = int(cast("block", str(int(receipt["blockNumber"], 16)), "timestamp", "--rpc-url", base_rpc))
+    origin_ts = block_ts(int(receipt["blockNumber"], 16), base_rpc)
 
     start = int(cast("block-number", "--rpc-url", uni_rpc)) - 120
     deadline = time.time() + wait
@@ -43,7 +49,7 @@ def main():
             fee, ref = int(d[0:64], 16), int(d[128:192], 16)
             if ref == sqrt_price:
                 bn = int(l["blockNumber"], 16)
-                cb_ts = int(cast("block", str(bn), "timestamp", "--rpc-url", uni_rpc))
+                cb_ts = block_ts(bn, uni_rpc)
                 print("base_tx,unichain_tx,origin_block_ts,callback_block_ts,latency_s,shield_fee_pips")
                 print(f"{tx},{l['transactionHash']},{origin_ts},{cb_ts},{cb_ts - origin_ts},{fee}")
                 return
