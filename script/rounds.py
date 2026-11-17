@@ -12,6 +12,7 @@ Usage (PowerShell or bash, from the repo root, after loading .env):
   python script/rounds.py --sync 150     # one-time: catch the Unichain pools up to the Base price
   python script/rounds.py 20             # run 20 rounds
   python script/rounds.py 5 --amount 20  # 5 rounds of 20-token swaps
+  python script/rounds.py --sync 20 --only control   # repair: one catch-up swap on a single pool
 
 Env: DEPLOYER, TOKEN_A, TOKEN_B, HOOK, BASE_POOL_ID, LAGLESS_POOL_ID, CONTROL_POOL_ID,
      BASE_SEPOLIA_RPC, UNICHAIN_SEPOLIA_RPC
@@ -45,15 +46,26 @@ def env(name):
     return v
 
 
-def cast(*args, sign=False):
+RETRYABLE = ("nonce too low", "replacement transaction underpriced", "already known", "timed out", "connection",
+             "429", "502", "503")
+
+
+def cast(*args, sign=False, attempts=4):
     cmd = ["cast", *args]
     if sign:
         cmd += ["--account", os.environ.get("LAGLESS_ACCOUNT", "lagless"), "--password", PASSWORD]
-    r = subprocess.run(cmd, capture_output=True, text=True)
-    if r.returncode != 0:
+    for attempt in range(1, attempts + 1):
+        r = subprocess.run(cmd, capture_output=True, text=True)
+        if r.returncode == 0:
+            return r.stdout.strip()
+        err = r.stderr.strip()
+        # Public RPCs are load-balanced: a node can briefly report a stale nonce. Those sends were rejected,
+        # not mined, so retrying is safe.
+        if attempt < attempts and any(k in err.lower() for k in RETRYABLE):
+            time.sleep(2 * attempt)
+            continue
         safe = [("***" if PASSWORD and a == PASSWORD else a) for a in cmd]
-        raise RuntimeError(f"{' '.join(safe[:4])} ... failed:\n{r.stderr.strip()[-800:]}")
-    return r.stdout.strip()
+        raise RuntimeError(f"{' '.join(safe[:4])} ... failed:\n{err[-800:]}")
 
 
 def block_ts(block, rpc):
@@ -103,6 +115,8 @@ def main():
     ap.add_argument("rounds", nargs="?", type=int, default=1)
     ap.add_argument("--amount", type=float, default=20, help="swap size in tokens (default 20)")
     ap.add_argument("--sync", type=float, help="only swap AMOUNT tokens token0->token1 on both Unichain pools")
+    ap.add_argument("--only", choices=["lagless", "control"], help="with --sync: swap just one pool")
+    ap.add_argument("--reverse", action="store_true", help="with --sync: swap token1->token0 instead")
     ap.add_argument("--timeout", type=int, default=45)
     a = ap.parse_args()
 
@@ -118,7 +132,9 @@ def main():
     if a.sync:
         amt = int(a.sync * 10**18)
         for name, key, pid in (("lagless", lag_key, lag_id), ("control", ctl_key, ctl_id)):
-            s = swap(uni_rpc, UNI_ROUTER, UNI_PM, pid, key, True, amt)
+            if a.only and a.only != name:
+                continue
+            s = swap(uni_rpc, UNI_ROUTER, UNI_PM, pid, key, not a.reverse, amt)
             print(f"sync {name}: {s['tx']}  fee={s['fee']}")
         return
 
