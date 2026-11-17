@@ -1,0 +1,16 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+solc = "0.8.26"
+evm_version = "cancun"
+via_ir = true
+optimizer = true
+optimizer_runs = 44444444 # matches v4-core; lower values hit stack-too-deep in PoolManager under via_ir
+bytecode_hash = "none"
+
+[fmt]
+line_length = 120
+
+[lint]
+lint_on_build = false
