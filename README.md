@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="brand/lagless-lockup-dark.svg">
+    <img src="brand/lagless-lockup.svg" alt="Lagless" width="280">
+  </picture>
+</p>
+
 # Lagless
 
 **Arbitrage pays LPs.** A Uniswap v4 pool on Unichain whose LP fee goes up about a second after the same pair moves on Base, so trades against the stale price pay LPs more.
