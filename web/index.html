@@ -350,6 +350,7 @@ const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
 addEventListener("scroll", () => $("nav").classList.toggle("scrolled", scrollY > 8), { passive: true });
 const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }), { threshold: 0.12 });
 document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
+setTimeout(() => document.querySelectorAll(".reveal").forEach((el) => el.classList.add("in")), 2500);
 
 function countUp(el, to, decimals = 0) {
   const pre = el.dataset.prefix || "", suf = el.dataset.suffix || "";
@@ -357,6 +358,7 @@ function countUp(el, to, decimals = 0) {
   const t0 = performance.now(), dur = 1100;
   const step = (t) => { const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3); el.textContent = pre + (to * e).toFixed(decimals) + suf; if (k < 1) requestAnimationFrame(step); };
   requestAnimationFrame(step);
+  setTimeout(() => { el.textContent = pre + to.toFixed(decimals) + suf; }, dur + 150);
 }
 
 async function rpc(chain, method, params) {
@@ -434,7 +436,11 @@ function render(d) {
     $("v-ctl").textContent = ctl.toFixed(2); $("v-lag").textContent = lag.toFixed(2);
   };
   const target = $("results");
-  new IntersectionObserver((es, o) => { if (es[0].isIntersecting) { go(); o.disconnect(); } }, { threshold: 0.25 }).observe(target);
+  let done = false;
+  const once = () => { if (!done) { done = true; go(); } };
+  if (target.getBoundingClientRect().top < innerHeight) once();
+  else new IntersectionObserver((es, o) => { if (es[0].isIntersecting) { once(); o.disconnect(); } }, { threshold: 0 }).observe(target);
+  setTimeout(once, 6000);
 
   const tag = {
     base: `<span class="tag" style="background:#F1F2F5"><svg viewBox="0 0 14 14"><path d="M4 2h6L8 7H2Z" fill="#101828"/></svg></span>`,
