@@ -413,8 +413,8 @@
       <div>
         <h4>Contracts</h4>
         <ul>
-          <li class="addr"><img src="/logos/unichain-star.svg" alt=""><span><span class="k">Hook on Unichain Sepolia</span><a href="https://sepolia.uniscan.xyz/address/0x03A696938EF795a0B1496FC407CF7B53F4702080" target="_blank" rel="noopener">0x03A6…2080</a></span><button class="copy" data-copy="0x03A696938EF795a0B1496FC407CF7B53F4702080" aria-label="Copy hook address"><svg class="cp" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="2"/><path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5"/></svg><svg class="ok" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8.5l3 3 7-7"/></svg></button></li>
-          <li class="addr"><img src="/logos/reactive-mark.svg" alt=""><span><span class="k">Reactive contract on Lasna</span><a href="https://lasna.reactscan.net/address/0x1eee3853d5C0dEB9702eC4e7EEd205ff58d878e5" target="_blank" rel="noopener">0x1eee…78e5</a></span><button class="copy" data-copy="0x1eee3853d5C0dEB9702eC4e7EEd205ff58d878e5" aria-label="Copy reactive contract address"><svg class="cp" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="2"/><path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5"/></svg><svg class="ok" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8.5l3 3 7-7"/></svg></button></li>
+          <li class="addr"><img src="/logos/unichain-star.svg" alt=""><span><span class="k">Hook on Unichain Sepolia</span><a href="https://sepolia.uniscan.xyz/address/0x4e1EDAF301465C9f9BD30f73bc174a18D2F12080" target="_blank" rel="noopener">0x4e1E…2080</a></span><button class="copy" data-copy="0x4e1EDAF301465C9f9BD30f73bc174a18D2F12080" aria-label="Copy hook address"><svg class="cp" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="2"/><path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5"/></svg><svg class="ok" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8.5l3 3 7-7"/></svg></button></li>
+          <li class="addr"><img src="/logos/reactive-mark.svg" alt=""><span><span class="k">Reactive contract on Lasna</span><a href="https://lasna.reactscan.net/address/0xaACb71b1A18bDb107C580F040c9D6c1105968bE5" target="_blank" rel="noopener">0xaACb…8bE5</a></span><button class="copy" data-copy="0xaACb71b1A18bDb107C580F040c9D6c1105968bE5" aria-label="Copy reactive contract address"><svg class="cp" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="2"/><path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5"/></svg><svg class="ok" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8.5l3 3 7-7"/></svg></button></li>
         </ul>
       </div>
       <div class="built">
@@ -430,8 +430,11 @@
 const CFG = {
   base: { rpc: ["https://base-sepolia-rpc.publicnode.com", "https://sepolia.base.org"], pm: "0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408", pool: "0xba49af2a7fd75f159181a85b3a2dabff571a9ea24eba7cc3bf943f5d9b512ffd", blockTime: 0.2, scan: "https://sepolia.basescan.org/tx/" },
   uni: { rpc: ["https://unichain-sepolia-rpc.publicnode.com", "https://sepolia.unichain.org"], pm: "0x00B036B58a818B1BC34d502D3fE730Db729e62AC", fromBlock: 68057100, scan: "https://sepolia.uniscan.xyz/tx/" },
-  hook: "0x03A696938EF795a0B1496FC407CF7B53F4702080",
-  lagPool: "0x5c20493e45711a98dd4fd618626e5dd17b13d3c3d68690c9a4c7c70460bcbfd9",
+  hook: "0x4e1EDAF301465C9f9BD30f73bc174a18D2F12080",
+  lagPool: "0x09f473aae7534b017312c177d01dbf26fea9c71e7ca2d5e1815ae79f57c0ffeb",
+  // Every Lagless deployment, newest first. Results and activity read all of them; the live fee reads the newest.
+  hooks: ["0x4e1EDAF301465C9f9BD30f73bc174a18D2F12080", "0x03A696938EF795a0B1496FC407CF7B53F4702080"],
+  lagPools: ["0x09f473aae7534b017312c177d01dbf26fea9c71e7ca2d5e1815ae79f57c0ffeb", "0x5c20493e45711a98dd4fd618626e5dd17b13d3c3d68690c9a4c7c70460bcbfd9"],
   ctlPool: "0xba49af2a7fd75f159181a85b3a2dabff571a9ea24eba7cc3bf943f5d9b512ffd",
 };
 const T = {
@@ -497,8 +500,8 @@ const median = (xs) => { const s = [...xs].sort((a, b) => a - b), m = s.length >
 async function load() {
   const latest = parseInt(await rpc("uni", "eth_blockNumber", []), 16);
   const [hookLogs, swapLogs] = await Promise.all([
-    logs("uni", { address: CFG.hook }, CFG.uni.fromBlock, latest, 50000),
-    logs("uni", { address: CFG.uni.pm, topics: [T.swap, [CFG.lagPool, CFG.ctlPool]] }, CFG.uni.fromBlock, latest, 50000),
+    logs("uni", { address: CFG.hooks }, CFG.uni.fromBlock, latest, 50000),
+    logs("uni", { address: CFG.uni.pm, topics: [T.swap, [...CFG.lagPools, CFG.ctlPool]] }, CFG.uni.fromBlock, latest, 50000),
   ]);
   const shields = await Promise.all(hookLogs.filter((l) => l.topics[0] === T.raised).map(async (l) => ({ tx: l.transactionHash, ts: await ts("uni", l), fee: Number(word(l.data, 0)), ref: word(l.data, 2) })));
   const clears = await Promise.all(hookLogs.filter((l) => l.topics[0] === T.cleared).map(async (l) => ({ tx: l.transactionHash, ts: await ts("uni", l) })));
@@ -515,7 +518,7 @@ async function load() {
   rounds.forEach((r, i) => {
     const end = rounds[i + 1] ? rounds[i + 1].base.ts : Infinity;
     const pick = (p) => uniSwaps.find((u) => u.pool === p && u.ts >= r.base.ts && u.ts < end && Math.abs(u.amountIn - r.base.amountIn) < 1e-9 && u.zfo === r.base.zfo);
-    r.lag = pick(CFG.lagPool); r.ctl = pick(CFG.ctlPool);
+    r.lag = CFG.lagPools.map(pick).find(Boolean); r.ctl = pick(CFG.ctlPool);
   });
   return { rounds, shields, clears, uniSwaps };
 }
@@ -552,7 +555,7 @@ function render(d) {
   const items = [];
   d.rounds.forEach((r) => items.push({ ts: r.base.ts, o: 0, t: tag.base, w: "Price moved on Base", u: CFG.base.scan + r.base.tx }));
   d.shields.forEach((s) => items.push({ ts: s.ts, o: 1, t: tag.up, w: `Fee raised to ${pct(s.fee)}`, u: CFG.uni.scan + s.tx }));
-  d.uniSwaps.filter((u) => u.pool === CFG.lagPool).forEach((u) => items.push({ ts: u.ts, o: 2, t: tag.trade, w: `Arbitrage paid ${pct(u.fee)}`, u: CFG.uni.scan + u.tx }));
+  d.uniSwaps.filter((u) => CFG.lagPools.includes(u.pool)).forEach((u) => items.push({ ts: u.ts, o: 2, t: tag.trade, w: `Arbitrage paid ${pct(u.fee)}`, u: CFG.uni.scan + u.tx }));
   d.clears.forEach((c) => items.push({ ts: c.ts, o: 3, t: tag.down, w: "Fee back to 0.30%", u: CFG.uni.scan + c.tx }));
   items.sort((a, b) => b.ts - a.ts || b.o - a.o);
   const ago = (t) => { const s = Math.max(1, Math.round(Date.now() / 1000 - t)); return s < 60 ? `${s}s ago` : s < 3600 ? `${Math.round(s / 60)}m ago` : s < 86400 ? `${Math.round(s / 3600)}h ago` : `${Math.round(s / 86400)}d ago`; };

@@ -82,7 +82,9 @@ contract DeployUnichain is LaglessScript {
     function run() external {
         require(block.chainid == Config.UNICHAIN_SEPOLIA, "run on Unichain Sepolia");
         address owner = vm.envAddress("DEPLOYER"); // may call hook.setReactive() once
-        uint256 funding = vm.envOr("HOOK_FUNDING_WEI", uint256(0)); // optional; Omni callbacks are paid from the reactive contract's reserves
+        // The Unichain callback proxy charges the destination contract for each callback (pulled via hook.pay()).
+        // An unfunded hook builds debt and the proxy stops delivering callbacks, so always fund it.
+        uint256 funding = vm.envOr("HOOK_FUNDING_WEI", uint256(0.0005 ether));
         // Start the new Lagless pool at the Base pool's current price (python script/base_price.py), so the
         // two venues begin in sync instead of at a stale 1:1.
         uint160 initPrice = uint160(vm.envOr("INIT_SQRT_PRICE_X96", uint256(Config.SQRT_PRICE_1_1)));

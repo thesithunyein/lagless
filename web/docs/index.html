@@ -173,7 +173,7 @@
 <ol class="flow">
   <li><img src="/logos/base-square.svg" alt=""><div><b>Watch</b><span>A swap on the Base pool emits <code>Swap</code> with the new <code>sqrtPriceX96</code>.</span></div></li>
   <li><img src="/logos/reactive-mark.svg" alt=""><div><b>Decide</b><span><code>LaglessReactive.react()</code> on Reactive Omni compares both prices. If the gap is 20 bps or more, it picks a fee and requests a callback.</span></div></li>
-  <li><img src="/logos/unichain-star.svg" alt=""><div><b>Protect</b><span><code>LaglessHook.setShield()</code> raises the fee for 10 seconds. <code>beforeSwap</code> returns it to the PoolManager with the override flag.</span></div></li>
+  <li><img src="/logos/unichain-star.svg" alt=""><div><b>Protect</b><span><code>LaglessHook.setShield()</code> raises the fee. It stays up until the prices match: the reactive contract renews it while the gap is open. <code>beforeSwap</code> returns it to the PoolManager with the override flag.</span></div></li>
   <li><img src="/logos/uniswap-mark.svg" alt=""><div><b>Reset</b><span>When the Unichain price catches up (gap of 5 bps or less), the reactive contract calls <code>clearShield()</code> and the fee drops back to 0.30%.</span></div></li>
 </ol>
 <p>Fee formula: <code>fee = min(maxFee, baseFee + slope × gapBps)</code>. With the default settings, a 40 bps move raises the fee from 0.30% to 0.50%.</p>
@@ -214,7 +214,7 @@ forge script script/Deploy.s.sol:DeployTokens --rpc-url $UNICHAIN_SEPOLIA_RPC --
 <tr><td>Trigger</td><td>20 bps</td><td>Price gap that raises the fee</td></tr>
 <tr><td>Slope</td><td>+0.005% per bp</td><td>How fast the fee grows with the gap</td></tr>
 <tr><td>Clear</td><td>5 bps</td><td>Gap at which the fee returns to base</td></tr>
-<tr><td>Shield duration</td><td>10 s</td><td>How long each raise lasts (hook cap: 60 s)</td></tr>
+<tr><td>Shield duration</td><td>60 s</td><td>Life of one raise; renewed while prices stay apart, cleared when they match (hook cap: 120 s)</td></tr>
 <tr><td>Fee step</td><td>0.025%</td><td>Smallest change that triggers a refresh</td></tr>
 </tbody></table>
 </section>
@@ -233,16 +233,17 @@ forge script script/Deploy.s.sol:DeployTokens --rpc-url $UNICHAIN_SEPOLIA_RPC --
 <tr><td><code>withdraw(to, amount)</code></td><td>Owner only. Recovers unused lREACT.</td></tr>
 </tbody></table>
 <p>Read the live fee yourself:</p>
-<div class="code"><button class="cc" aria-label="Copy code">Copy</button><pre><code>cast call 0x03A696938EF795a0B1496FC407CF7B53F4702080 &quot;currentFee(bytes32)(uint24)&quot; 0x5c20493e45711a98dd4fd618626e5dd17b13d3c3d68690c9a4c7c70460bcbfd9 --rpc-url https://sepolia.unichain.org</code></pre></div></section>
+<div class="code"><button class="cc" aria-label="Copy code">Copy</button><pre><code>cast call 0x4e1EDAF301465C9f9BD30f73bc174a18D2F12080 &quot;currentFee(bytes32)(uint24)&quot; 0x09f473aae7534b017312c177d01dbf26fea9c71e7ca2d5e1815ae79f57c0ffeb --rpc-url https://sepolia.unichain.org</code></pre></div></section>
 <section id="contracts"><h2>Live contracts</h2>
 <table><thead><tr><th>Item</th><th>Network</th><th>Address</th></tr></thead><tbody>
-<tr><td>LaglessHook</td><td>Unichain Sepolia</td><td><a class="mono" href="https://sepolia.uniscan.xyz/address/0x03A696938EF795a0B1496FC407CF7B53F4702080" target="_blank" rel="noopener">0x03A6…2080</a><button class="cp" data-copy="0x03A696938EF795a0B1496FC407CF7B53F4702080" aria-label="Copy">Copy</button></td></tr>
-<tr><td>LaglessReactive</td><td>Reactive Lasna</td><td><a class="mono" href="https://lasna.reactscan.net/address/0x1eee3853d5C0dEB9702eC4e7EEd205ff58d878e5" target="_blank" rel="noopener">0x1eee…78e5</a><button class="cp" data-copy="0x1eee3853d5C0dEB9702eC4e7EEd205ff58d878e5" aria-label="Copy">Copy</button></td></tr>
+<tr><td>LaglessHook</td><td>Unichain Sepolia</td><td><a class="mono" href="https://sepolia.uniscan.xyz/address/0x4e1EDAF301465C9f9BD30f73bc174a18D2F12080" target="_blank" rel="noopener">0x4e1E…2080</a><button class="cp" data-copy="0x4e1EDAF301465C9f9BD30f73bc174a18D2F12080" aria-label="Copy">Copy</button></td></tr>
+<tr><td>LaglessReactive</td><td>Reactive Lasna</td><td><a class="mono" href="https://lasna.reactscan.net/address/0xaACb71b1A18bDb107C580F040c9D6c1105968bE5" target="_blank" rel="noopener">0xaACb…8bE5</a><button class="cp" data-copy="0xaACb71b1A18bDb107C580F040c9D6c1105968bE5" aria-label="Copy">Copy</button></td></tr>
 <tr><td>lWETH (test token)</td><td>Base and Unichain Sepolia</td><td><code class="h">0x9063cE4E…C6d0B3</code><button class="cp" data-copy="0x9063cE4EBFBA81206E621158B7586024eeC6d0B3" aria-label="Copy">Copy</button></td></tr>
 <tr><td>lUSDC (test token)</td><td>Base and Unichain Sepolia</td><td><code class="h">0x41eFe7a3…7E7893</code><button class="cp" data-copy="0x41eFe7a3A065a5094Eb88c9F486238Fc227E7893" aria-label="Copy">Copy</button></td></tr>
-<tr><td>Lagless pool id</td><td>Unichain Sepolia</td><td><code class="h">0x5c20493e…bcbfd9</code><button class="cp" data-copy="0x5c20493e45711a98dd4fd618626e5dd17b13d3c3d68690c9a4c7c70460bcbfd9" aria-label="Copy">Copy</button></td></tr>
+<tr><td>Lagless pool id</td><td>Unichain Sepolia</td><td><code class="h">0x09f473aa…c0ffeb</code><button class="cp" data-copy="0x09f473aae7534b017312c177d01dbf26fea9c71e7ca2d5e1815ae79f57c0ffeb" aria-label="Copy">Copy</button></td></tr>
 <tr><td>Source and control pool id</td><td>Base and Unichain Sepolia</td><td><code class="h">0xba49af2a…512ffd</code><button class="cp" data-copy="0xba49af2a7fd75f159181a85b3a2dabff571a9ea24eba7cc3bf943f5d9b512ffd" aria-label="Copy">Copy</button></td></tr>
 </tbody></table>
+<p>Version 1 (10-second raises, rounds 1–34 in the results): hook <code>0x03A6…2080</code>, reactive <code>0x1eee…78e5</code>, pool <code>0x5c20493e…bcbfd9</code>.</p>
 </section>
 <section id="live-rounds"><h2>Run live rounds</h2>
 <p><code>script/rounds.py</code> moves the Base price, waits for the fee change on Unichain, then sends the same arbitrage trade to the Lagless pool and the control pool. Each round adds a row to <code>results.csv</code>.</p>
@@ -264,6 +265,9 @@ python3 script/rounds.py 10 --race    # arbitrage fires right after the Base mov
 <p>The reactive contract has debt on the Omni ledger. Top up its reserves; <code>depositTo</code> settles the debt first.</p>
 <div class="code"><button class="cc" aria-label="Copy code">Copy</button><pre><code>cast send 0x8888888888888888888888888888888888888888 &quot;depositTo(address)&quot; $REACTIVE --value 0.1ether --rpc-url $LASNA_RPC --private-key $PRIVATE_KEY</code></pre></div>
 <p>Depositing to the legacy <code>0x…fffFfF</code> service or calling <code>coverDebt()</code> does not clear Omni debt.</p>
+<h3>The fee rose once, then never again</h3>
+<p>The Unichain callback proxy charges the hook for every callback. If the hook has no ETH, it builds debt and the proxy stops delivering callbacks. Settle it and add a reserve:</p>
+<div class="code"><button class="cc" aria-label="Copy code">Copy</button><pre><code>cast send 0x775c9B990ADe401060B78D0e98684eEf8d2466C1 "depositTo(address)" $HOOK --value 0.0005ether --rpc-url $UNICHAIN_SEPOLIA_RPC --account lagless</code></pre></div>
 <h3>Transactions on Lasna stay pending</h3>
 <p>Lasna has a 100 gwei minimum base fee and needs a priority tip. Add <code>--with-gas-price 101gwei --priority-gas-price 1gwei</code>.</p>
 <h3>Pool creation reverts</h3>
