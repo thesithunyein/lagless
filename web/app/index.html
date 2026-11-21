@@ -301,6 +301,7 @@ document.querySelectorAll(".seg button").forEach((b) => b.addEventListener("clic
 async function setUser(a) {
   user = a || null;
   if (!user) { $("who").textContent = "Not connected"; $("faucet").hidden = true; setStage(0); return; }
+  $("error").hidden = true;
   $("who").textContent = `Connected ${short(user)}`;
   if (stage === 0) setStage(1);
   try {
@@ -407,7 +408,15 @@ async function doConnect() {
   status(`Approve the connection in ${w.info.name}`);
   const nudge = setTimeout(() => status(`No popup? Click the ${w.info.name} icon in your browser toolbar.`), 6000);
   try {
-    const [a] = await eth.request({ method: "eth_requestAccounts" });
+    let a;
+    try { [a] = await eth.request({ method: "eth_requestAccounts" }); }
+    catch (e) {
+      if ((e?.code ?? e?.data?.originalError?.code) !== -32002) throw e;
+      // A connect request is already open in the wallet: wait for the user to approve it there.
+      status(`Approve the request already open in ${w.info.name}. Click its toolbar icon if you don't see it.`);
+      for (let i = 0; i < 120 && !a; i++) { await sleep(1000); [a] = await eth.request({ method: "eth_accounts" }).catch(() => []); }
+      if (!a) throw e;
+    }
     store.set("lagless.wallet", w.info.rdns);
     status(""); await setUser(a);
   } finally { clearTimeout(nudge); }
