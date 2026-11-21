@@ -73,8 +73,7 @@
   .steps li.now { background: var(--blue-soft); color: var(--ink); }
   .steps li.now i { background: var(--blue); color: var(--white); }
   .steps li.done { color: var(--body); }
-  .steps li.done i { background: #12B76A; color: var(--white); font-size: 0; }
-  .steps li.done i::after { content: ""; width: 9px; height: 5px; border: solid #fff; border-width: 0 0 2px 2px; transform: translateY(-1px) rotate(-45deg); }
+  .steps li.done i { background: #12B76A url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.5 8.5l2.2 2.2L11.5 6' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 14px 14px no-repeat; color: transparent; font-size: 0; }
   h2 { font-size: 26px; letter-spacing: -.03em; font-weight: 600; margin: 0; }
   .desc { color: var(--body); margin: 8px 0 0; font-size: 16px; }
   .go { width: 100%; height: 52px; font-size: 16px; margin-top: 24px; border-radius: 12px; }
@@ -353,13 +352,25 @@ async function ensureChain(c) {
     await eth.request({ method: "wallet_addEthereumChain", params: [{ chainId: k.hex, chainName: k.name, nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 }, rpcUrls: [k.add], blockExplorerUrls: [k.scan] }] });
   }
   if ((await eth.request({ method: "eth_chainId" })).toLowerCase() !== k.hex) throw new Error(`Switch your wallet to ${k.name} and try again.`);
+  const acc = await eth.request({ method: "eth_accounts" }).catch(() => []);
+  if (!acc.length || acc[0].toLowerCase() !== user.toLowerCase()) { status("Allow this site on the new network in your wallet"); await eth.request({ method: "eth_requestAccounts" }); }
 }
 
 async function send(c, to, data, what) {
   status(`Confirm in your wallet: ${what}`);
   const nudge = setTimeout(() => status(`Confirm in your wallet: ${what}. No popup? Click the wallet icon in your toolbar.`), 8000);
   let hash;
-  try { hash = await eth.request({ method: "eth_sendTransaction", params: [{ from: user, to, data }] }); } finally { clearTimeout(nudge); }
+  try {
+    try { hash = await eth.request({ method: "eth_sendTransaction", params: [{ from: user, to, data }] }); }
+    catch (e) {
+      // MetaMask scopes site access per network; after a network switch it can answer 4100 until access is granted there too.
+      if ((e?.code ?? e?.data?.originalError?.code) !== 4100) throw e;
+      status("Allow this site on the new network in your wallet");
+      await eth.request({ method: "eth_requestAccounts" });
+      status(`Confirm in your wallet: ${what}`);
+      hash = await eth.request({ method: "eth_sendTransaction", params: [{ from: user, to, data }] });
+    }
+  } finally { clearTimeout(nudge); }
   status(`${what}…`);
   for (let i = 0; i < 240; i++) {
     const r = await rpc(c, "eth_getTransactionReceipt", [hash]).catch(() => null);
@@ -372,6 +383,7 @@ async function send(c, to, data, what) {
 function niceErr(e) {
   const code = e?.code ?? e?.data?.originalError?.code;
   if (code === 4001) return "Cancelled in your wallet. Press the button to try again.";
+  if (code === 4100) return "Your wallet hasn't allowed this site on this network yet. Press the button again and approve the request.";
   if (code === -32002) return "Your wallet already has a request waiting. Click the wallet icon in your browser toolbar to open it.";
   const m = String(e?.message || e);
   if (/insufficient funds/i.test(m)) { $("faucet").hidden = false; return "Not enough test ETH for gas. Use the faucet links below."; }
@@ -512,27 +524,29 @@ $("dc").addEventListener("click", async () => {
 });
 
 // ---------- live fee ----------
-let expiry = 0;
+let expiry = 0, skew = 0; // skew = chain time minus device time, so a wrong PC clock can't break the countdown
 async function pollFee() {
   try {
     const f = parseInt(await call("uni", HOOK, "0xcaa93ee8" + LAG_POOL.slice(2)), 16);
     $("fee").textContent = pct(f);
     const on = f > 3000;
     document.querySelector(".live").classList.toggle("on", on);
-    const left = Math.max(0, Math.round(expiry - Date.now() / 1000));
+    const left = Math.max(0, Math.round(expiry - (Date.now() / 1000 + skew)));
     $("state").querySelector("span").textContent = on ? (left ? `Higher fee, ${left} s left` : "Higher fee") : "Normal fee";
     $("meter").style.width = on && left ? Math.min(100, left * 10) + "%" : "0%";
   } catch { $("fee").textContent = "–"; }
 }
 async function pollExpiry() {
   try {
-    const to = parseInt(await rpc("uni", "eth_blockNumber", []), 16);
+    const head = await rpc("uni", "eth_getBlockByNumber", ["latest", false]);
+    const to = parseInt(head.number, 16);
+    skew = parseInt(head.timestamp, 16) + 0.5 - Date.now() / 1000;
     const ls = await rpc("uni", "eth_getLogs", [{ address: HOOK, topics: [T.raised], fromBlock: "0x" + Math.max(0, to - 90).toString(16), toBlock: "0x" + to.toString(16) }]);
     if (ls.length) expiry = Number(word(ls[ls.length - 1].data, 1));
   } catch {}
 }
 setStage(0);
-pollFee(); pollExpiry(); setInterval(pollFee, 1000); setInterval(pollExpiry, 2500);
+pollFee(); pollExpiry(); setInterval(pollFee, 1000); setInterval(pollExpiry, 1500);
 addEventListener("scroll", () => $("nav").classList.toggle("scrolled", scrollY > 4), { passive: true });
 </script>
 </body>
