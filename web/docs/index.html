@@ -265,6 +265,9 @@ python3 script/rounds.py 10 --race    # arbitrage fires right after the Base mov
 <p>The reactive contract has debt on the Omni ledger. Top up its reserves; <code>depositTo</code> settles the debt first.</p>
 <div class="code"><button class="cc" aria-label="Copy code">Copy</button><pre><code>cast send 0x8888888888888888888888888888888888888888 &quot;depositTo(address)&quot; $REACTIVE --value 0.1ether --rpc-url $LASNA_RPC --private-key $PRIVATE_KEY</code></pre></div>
 <p>Depositing to the legacy <code>0x…fffFfF</code> service or calling <code>coverDebt()</code> does not clear Omni debt.</p>
+<h3>The fee rose once, then never again</h3>
+<p>The Unichain callback proxy charges the hook for every callback. If the hook has no ETH, it builds debt and the proxy stops delivering callbacks. Settle it and add a reserve:</p>
+<div class="code"><button class="cc" aria-label="Copy code">Copy</button><pre><code>cast send 0x775c9B990ADe401060B78D0e98684eEf8d2466C1 "depositTo(address)" $HOOK --value 0.0005ether --rpc-url $UNICHAIN_SEPOLIA_RPC --account lagless</code></pre></div>
 <h3>Transactions on Lasna stay pending</h3>
 <p>Lasna has a 100 gwei minimum base fee and needs a priority tip. Add <code>--with-gas-price 101gwei --priority-gas-price 1gwei</code>.</p>
 <h3>Pool creation reverts</h3>
