@@ -313,6 +313,37 @@ contract LaglessTest is Test {
         assertEq(hook.currentFee(key.toId()), MAX_FEE);
     }
 
+    /// @notice While prices stay apart, the raise is renewed before it lapses, so a bot can't just wait it out.
+    function test_reactive_keepsShieldAliveUntilPricesMatch() public {
+        bytes32 destPoolId = PoolId.unwrap(key.toId());
+        vm.recordLogs();
+        _react(_swapLog(84532, makeAddr("basePoolManager"), keccak256("basePool"), _sqrtForBps(60)));
+        assertEq(_deliverCallbacks(vm.getRecordedLogs()), 1);
+        uint64 until = reactive.shieldUntil();
+        assertEq(until, block.timestamp + 10);
+
+        // Early destination swap that barely moves the gap: nothing to send.
+        vm.recordLogs();
+        _react(_swapLog(1301, address(manager), destPoolId, _sqrtForBps(1)));
+        assertEq(_deliverCallbacks(vm.getRecordedLogs()), 0);
+
+        // Past half its life with the gap still open: renewed instead of lapsing.
+        vm.warp(block.timestamp + 6);
+        vm.recordLogs();
+        _react(_swapLog(1301, address(manager), destPoolId, _sqrtForBps(2)));
+        assertEq(_deliverCallbacks(vm.getRecordedLogs()), 1);
+        assertEq(reactive.shieldUntil(), block.timestamp + 10);
+        vm.warp(block.timestamp + 6); // would have expired without the renewal
+        assertGt(hook.currentFee(key.toId()), BASE_FEE);
+
+        // Prices match: cleared, and the timer resets.
+        vm.recordLogs();
+        _react(_swapLog(1301, address(manager), destPoolId, _sqrtForBps(59)));
+        assertEq(_deliverCallbacks(vm.getRecordedLogs()), 1);
+        assertEq(hook.currentFee(key.toId()), BASE_FEE);
+        assertEq(reactive.shieldUntil(), 0);
+    }
+
     function testFuzz_feeNeverExceedsMax(uint16 bps) public view {
         LaglessReactive.Config memory c;
         (,,,,,,,, c.baseFee, c.maxFee, c.slopePipsPerBp,,,,,) = reactive.cfg();

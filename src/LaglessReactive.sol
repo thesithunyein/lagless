@@ -45,6 +45,7 @@ contract LaglessReactive is OmniReactiveBase {
     uint160 public originSqrtPriceX96;
     uint160 public destSqrtPriceX96; // already in origin orientation
     uint24 public lastSentFee; // 0 = no active shield as far as this contract knows
+    uint64 public shieldUntil; // when the last raise expires on the destination (Reactive and Unichain clocks agree to ~1 s)
 
     constructor(Config memory _cfg, uint160 initialDestSqrtPriceX96) payable {
         require(_cfg.baseFee <= _cfg.maxFee && _cfg.clearBps < _cfg.triggerBps, "bad config");
@@ -85,11 +86,14 @@ contract LaglessReactive is OmniReactiveBase {
 
         if (dev >= c.triggerBps) {
             uint24 fee = feeFor(dev, c);
-            // Refresh on every qualifying origin move (keeps the destination expiry alive),
-            // but skip destination-side swaps that don't change the fee meaningfully.
+            // The fee stays raised until prices match: refresh on every qualifying origin move, when the fee
+            // changes meaningfully, or when the current raise is past half its life (so it can't lapse while
+            // the gap is still open). Destination swaps that change nothing are skipped to save callbacks.
             bool fromOrigin = log.chainId == c.originChainId;
-            if (fromOrigin || lastSentFee == 0 || _absDiff(fee, lastSentFee) >= c.feeStep) {
+            bool ageing = block.timestamp + c.shieldDuration / 2 >= shieldUntil;
+            if (fromOrigin || lastSentFee == 0 || ageing || _absDiff(fee, lastSentFee) >= c.feeStep) {
                 lastSentFee = fee;
+                shieldUntil = uint64(block.timestamp + c.shieldDuration);
                 bytes memory payload = abi.encodeWithSignature(
                     "setShield(address,bytes32,uint24,uint32,uint160)",
                     address(0), // replaced with this contract's address by Reactive Network
@@ -103,6 +107,7 @@ contract LaglessReactive is OmniReactiveBase {
             }
         } else if (dev <= c.clearBps && lastSentFee != 0) {
             lastSentFee = 0;
+            shieldUntil = 0;
             bytes memory payload =
                 abi.encodeWithSignature("clearShield(address,bytes32)", address(0), c.destPoolId);
             _callback(c, payload);

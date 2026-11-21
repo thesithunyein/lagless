@@ -32,8 +32,8 @@ library Config {
     // Lagless parameters (tune with measured data)
     uint24 internal constant BASE_FEE = 3000; // 0.30%
     uint24 internal constant MAX_FEE = 10_000; // 1.00%
-    uint32 internal constant MAX_SHIELD_DURATION = 60; // seconds, hard cap on destination
-    uint32 internal constant SHIELD_DURATION = 10; // seconds per raise/refresh
+    uint32 internal constant MAX_SHIELD_DURATION = 120; // seconds, hard cap enforced by the hook
+    uint32 internal constant SHIELD_DURATION = 60; // seconds per raise; refreshed while the gap stays open, cleared when prices match
     uint24 internal constant SLOPE_PIPS_PER_BP = 50;
     uint16 internal constant TRIGGER_BPS = 20;
     uint16 internal constant CLEAR_BPS = 5;

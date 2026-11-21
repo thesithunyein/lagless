@@ -82,7 +82,10 @@ contract DeployUnichain is LaglessScript {
     function run() external {
         require(block.chainid == Config.UNICHAIN_SEPOLIA, "run on Unichain Sepolia");
         address owner = vm.envAddress("DEPLOYER"); // may call hook.setReactive() once
-        uint256 funding = vm.envOr("HOOK_FUNDING_WEI", uint256(0.01 ether)); // pays Reactive callback fees
+        uint256 funding = vm.envOr("HOOK_FUNDING_WEI", uint256(0)); // optional; Omni callbacks are paid from the reactive contract's reserves
+        // Start the new Lagless pool at the Base pool's current price (python script/base_price.py), so the
+        // two venues begin in sync instead of at a stale 1:1.
+        uint160 initPrice = uint160(vm.envOr("INIT_SQRT_PRICE_X96", uint256(Config.SQRT_PRICE_1_1)));
 
         uint160 flags = uint160(Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_SWAP_FLAG);
         bytes memory args = abi.encode(
@@ -114,7 +117,7 @@ contract DeployUnichain is LaglessScript {
         IPoolManager pm = IPoolManager(Config.UNI_POOL_MANAGER);
         // The control pool has no hook, so it is shared across redeploys; only create it once.
         (uint160 controlPrice,,,) = pm.getSlot0(control.toId());
-        pm.initialize(lagless, Config.SQRT_PRICE_1_1);
+        pm.initialize(lagless, initPrice);
         if (controlPrice == 0) pm.initialize(control, Config.SQRT_PRICE_1_1);
         _approve(Config.UNI_LP_ROUTER);
         _approve(Config.UNI_SWAP_ROUTER);
@@ -157,7 +160,9 @@ contract DeployReactive is Script {
         uint256 reserves = vm.envOr("OMNI_RESERVE_WEI", uint256(0.1 ether)); // prepaid fees on the Omni ledger
 
         vm.startBroadcast();
-        LaglessReactive r = new LaglessReactive{value: balance}(cfg, Config.SQRT_PRICE_1_1);
+        // Must match the price the Lagless pool was initialized at (INIT_SQRT_PRICE_X96 from DeployUnichain).
+        uint160 destInit = uint160(vm.envOr("INIT_SQRT_PRICE_X96", uint256(Config.SQRT_PRICE_1_1)));
+        LaglessReactive r = new LaglessReactive{value: balance}(cfg, destInit);
         // Subscribing creates Omni debt, and any debt makes subscriptions INACTIVE. depositTo settles the
         // debt first and keeps the rest as reserves that pay for future reactions and callbacks.
         if (reserves > 0) SYSTEM.depositTo{value: reserves}(address(r));
