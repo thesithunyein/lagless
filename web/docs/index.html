@@ -176,7 +176,7 @@
   <li><img src="/logos/uniswap-mark.svg" alt=""><div><b>Reset</b><span>When the Unichain price catches up (gap of 5 bps or less), the reactive contract calls <code>clearShield()</code> and the fee drops back to 0.30%.</span></div></li>
 </ol>
 <p>Fee formula: <code>fee = min(maxFee, baseFee + slope × gapBps)</code>. With the default settings, a 40 bps move raises the fee from 0.30% to 0.50%.</p>
-<div class="note"><b>Limitation.</b> A very fast arbitrageur can still trade before the callback lands. Lagless shrinks the free window and makes the rest of it more expensive. It does not block arbitrage.</div>
+<div class="note"><b>Limitation.</b> In 10 race rounds, arbitrage sent the moment the Base swap confirmed landed 1–2 blocks after the fee rose. A faster bot, for example one reading Base pre-confirmations, can still trade inside the ~2 second window and pay the base fee. Lagless shortens the free window. It does not block arbitrage.</div>
 </section>
 <section id="quick-start"><h2>Quick start</h2>
 <p>You need <a href="https://book.getfoundry.sh/getting-started/installation" target="_blank" rel="noopener">Foundry</a> and Git.</p>

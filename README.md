@@ -177,17 +177,30 @@ Base swap → Unichain fee change: **2 s** (block timestamps, 1 s resolution).
 
 ### Fast arbitrage (race mode)
 
-The rounds above wait for the shield before trading, so they show the best case. `python3 script/rounds.py 10 --race` sends the arbitrage the moment the Base swap confirms, like a fast bot would.
+The 24 rounds above wait for the shield before trading, so they show the best case. Race mode sends the arbitrage the moment the Base swap is confirmed, like a bot watching Base over a public RPC:
 
-Race results: _pending, run in progress._
+```bash
+python3 script/rounds.py 10 --race
+```
+
+10 race rounds on testnet (Nov 21, 2026):
+
+| Metric | Result |
+|---|---|
+| Base swap → Unichain fee change (median) | **2 s** (2 s ×6, 3 s ×4) |
+| Base swap → arbitrage landed on Unichain | 3–4 s, always 1–2 blocks **after** the shield |
+| Arbitrage trades that paid the higher fee | **10 / 10** (0.495–0.50% vs 0.30%) |
+| LP fees, Lagless vs control | **0.995** vs **0.600** → **+66%** |
+
+Every row, with all transaction hashes, is in [`results.csv`](results.csv).
 
 ### What this means
 
-- Arbitrage that lands **after** the callback (about 2 s) pays LPs **+66%** in this setup.
-- A bot that trades **faster** than the callback still pays the base 0.30%. Lagless shortens the free window; it does not close it.
-- On legacy Reactive (~7 s blocks) that free window would be several times longer. Omni's ~1 s blocks are what make this useful at all.
+- An arbitrageur who reacts to the **confirmed** Base swap, as most bots on public infrastructure do, lands after the shield and pays LPs **+66%** in this setup.
+- A faster bot can still win. One that reads Base's 200 ms pre-confirmations, or sits next to the Unichain sequencer, can trade inside the ~2 s window and pay the base 0.30%. These runs don't show that case because the test script isn't that fast; it is a real limit, not a solved one.
+- Lagless shortens the free window to about 2 seconds. On legacy Reactive (~7 s blocks) the same design would leave a window several times longer. Omni's ~1 s blocks are what make it useful.
 
-The website splits every round into these two groups, read live from the chain.
+The website splits every round into "after the fee rose" and "before the fee rose", read live from the chain.
 
 ## Trust model
 
