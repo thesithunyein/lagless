@@ -14,6 +14,7 @@
 
 <p align="center">
   <a href="https://uselagless.vercel.app"><b>Website</b></a> ·
+  <a href="https://uselagless.vercel.app/app/"><b>Try it</b></a> ·
   <a href="#how-it-works">How it works</a> ·
   <a href="#results">Results</a> ·
   <a href="#deploy-testnets-0">Deploy</a> ·

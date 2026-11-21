@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Try it | Lagless</title>
+<meta name="description" content="Move the price on Base, watch the Unichain fee rise in about two seconds, then trade and see who earns.">
+<meta property="og:title" content="Try Lagless">
+<meta property="og:image" content="https://uselagless.vercel.app/og.png">
+<meta name="theme-color" content="#FFFFFF">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --white: #FFFFFF;
+    --mist: #F5F6F9;
+    --line: #E5E8EE;
+    --ink: #101828;
+    --body: #4A5565;
+    --faint: #99A1AF;
+    --blue: #3D4FF2;
+    --blue-soft: #EEF0FE;
+    --amber: #F5A524;
+    --amber-soft: #FFF5E1;
+    --amber-ink: #8A5A00;
+    --r: 14px;
+    --font: "Geist", ui-sans-serif, system-ui, sans-serif;
+    --ease: cubic-bezier(.22,.8,.2,1);
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--white); color: var(--ink); -webkit-font-smoothing: antialiased; scroll-behavior: smooth; }
+  body { margin: 0; font: 400 16px/1.6 var(--font); font-variant-numeric: tabular-nums; }
+  a { color: inherit; }
+  :focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; border-radius: 4px; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+
+  /* Signature: the offset pair from the logo, used as a small marker */
+  .pair-mark { display: inline-block; width: 22px; height: 14px; position: relative; flex: none; }
+  .pair-mark::before, .pair-mark::after { content: ""; position: absolute; width: 11px; height: 7px; transform: skewX(-18deg); }
+  .pair-mark::before { left: 2px; top: 0; background: var(--ink); }
+  .pair-mark::after { left: 9px; top: 7px; background: var(--blue); }
+
+  nav { position: sticky; top: 0; z-index: 20; background: rgba(255,255,255,.86); backdrop-filter: saturate(1.6) blur(14px); -webkit-backdrop-filter: saturate(1.6) blur(14px); border-bottom: 1px solid transparent; transition: border-color .2s; }
+  nav.scrolled { border-bottom-color: var(--line); }
+  .nav { display: flex; align-items: center; justify-content: space-between; height: 68px; }
+  .brand { display: flex; align-items: center; text-decoration: none; }
+  .brand svg { height: 26px; width: auto; display: block; }
+  .links { display: flex; align-items: center; gap: 30px; font-size: 14px; color: var(--body); }
+  .links a { text-decoration: none; transition: color .15s; }
+  .links a:hover { color: var(--ink); }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 42px; padding: 0 18px; border-radius: 10px; font: 500 14px/1 var(--font); text-decoration: none; border: 1px solid var(--line); background: var(--white); color: var(--ink); transition: background .15s, border-color .15s, transform .15s; }
+  .btn:hover { border-color: #CBD1DB; }
+  .btn:active { transform: translateY(1px); }
+  .btn.dark { background: var(--ink); border-color: var(--ink); color: var(--white); }
+  .btn.dark:hover { background: #1E2939; }
+  .btn svg { width: 16px; height: 16px; }
+
+
+  .links a.cur { color: var(--ink); font-weight: 500; }
+  .app { padding: 40px 24px 96px; }
+  .crumb { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--body); }
+  .intro h1 { font-size: clamp(36px, 4.6vw, 52px); letter-spacing: -.04em; font-weight: 600; line-height: 1.04; margin: 14px 0 0; }
+  .lede { font-size: 18px; color: var(--body); max-width: 36em; margin: 14px 0 0; }
+  .layout { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: 20px; margin-top: 36px; align-items: start; }
+  .flow { display: grid; gap: 14px; }
+  .card { border: 1px solid var(--line); border-radius: 18px; background: var(--white); padding: 24px; }
+  h3 { font-size: 17px; font-weight: 600; letter-spacing: -.015em; margin: 0; }
+  .muted { color: var(--body); font-size: 15px; margin: 6px 0 0; }
+  .hint { font-size: 13.5px; color: var(--faint); margin: 16px 0 0; padding-top: 14px; border-top: 1px solid var(--line); }
+  .hint a, .fine a, .log a, .result a { color: var(--blue); text-decoration: none; }
+  .hint a:hover, .fine a:hover, .log a:hover, .result a:hover { text-decoration: underline; }
+  .wallet .row { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+  .wallet.ok .btn { background: var(--white); color: var(--ink); border-color: var(--line); }
+  .step { display: grid; grid-template-columns: 32px 1fr; gap: 16px; }
+  .step.dim { opacity: .55; }
+  .num { width: 32px; height: 32px; border-radius: 50%; background: var(--blue-soft); color: var(--blue); display: grid; place-items: center; font-weight: 600; font-size: 14px; }
+  .step.done .num { background: #ECFDF3; color: #079455; }
+  .controls { display: flex; gap: 10px; margin: 18px 0 14px; flex-wrap: wrap; }
+  .seg { display: inline-flex; background: var(--mist); border-radius: 10px; padding: 3px; }
+  .seg button { font: 500 14px/1 var(--font); border: 0; background: none; color: var(--body); padding: 10px 14px; border-radius: 8px; cursor: pointer; }
+  .seg button.on { background: var(--white); color: var(--ink); box-shadow: 0 1px 2px rgba(16,24,40,.08); }
+  .amt { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 10px; padding: 0 12px; font-size: 14px; color: var(--faint); }
+  .amt input { width: 64px; border: 0; font: 500 15px var(--font); color: var(--ink); padding: 10px 0; outline: none; background: none; }
+  .amt:focus-within { border-color: var(--blue); }
+  .btn.wide { width: 100%; height: 46px; font-size: 15px; }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .log { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 8px; font-size: 14px; }
+  .log li { display: flex; gap: 10px; align-items: center; color: var(--body); }
+  .log li::before { content: ""; width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line); border-top-color: var(--blue); flex: none; animation: spin .8s linear infinite; }
+  .log li.ok::before { animation: none; border: 0; background: #12B76A url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5l2.5 2.5L12 5.5' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/12px no-repeat; }
+  .log li.err { color: #B42318; }
+  .log li.err::before { animation: none; border: 0; background: #F04438; }
+  .log li a { margin-left: auto; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .result { margin-top: 16px; border-radius: 14px; padding: 16px 18px; background: var(--mist); font-size: 15px; color: var(--body); }
+  .result b { color: var(--ink); }
+  .result.win { background: var(--amber-soft); color: var(--amber-ink); }
+  .result.win b { color: #6B4500; }
+  .live { position: sticky; top: 92px; }
+  .lv-head { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--body); }
+  .lv-head img { width: 16px; height: 16px; }
+  .big { font-size: 64px; font-weight: 600; letter-spacing: -.045em; line-height: 1; margin: 18px 0 10px; font-variant-numeric: tabular-nums; transition: color .3s; }
+  .live.on .big { color: #B76E00; }
+  .state { display: inline-flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--body); background: var(--mist); border-radius: 999px; padding: 6px 12px 6px 10px; }
+  .state i { width: 7px; height: 7px; border-radius: 50%; background: #12B76A; }
+  .live.on .state { background: var(--amber-soft); color: var(--amber-ink); }
+  .live.on .state i { background: var(--amber); }
+  .meter { height: 6px; background: var(--mist); border-radius: 3px; margin: 18px 0 6px; overflow: hidden; }
+  .meter div { height: 100%; width: 0; background: var(--amber); transition: width 1s linear; }
+  .tl { list-style: none; margin: 18px 0 0; padding: 0; display: grid; gap: 0; }
+  .tl li { position: relative; padding: 0 0 18px 26px; font-size: 14px; display: flex; flex-direction: column; gap: 2px; }
+  .tl li::before { content: ""; position: absolute; left: 0; top: 4px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--line); background: var(--white); }
+  .tl li:not(:last-child)::after { content: ""; position: absolute; left: 6px; top: 20px; bottom: 2px; width: 2px; background: var(--line); }
+  .tl li.ok::before { border-color: var(--blue); background: var(--blue); }
+  .tl li b { font-weight: 500; color: var(--ink); }
+  .tl li span { color: var(--faint); }
+  .tl li span a { color: var(--blue); text-decoration: none; }
+  .fine { font-size: 12.5px; color: var(--faint); margin: 6px 0 0; }
+  @media (max-width: 920px) { .layout { grid-template-columns: 1fr; } .live { position: static; order: -1; } .links .opt { display: none; } .links .opt.cur { display: inline; } }
+  @media (prefers-reduced-motion: reduce) { .log li::before { animation: none; } }
+
+</style>
+</head>
+<body>
+<nav id="nav">
+  <div class="wrap nav">
+    <a class="brand" href="/" aria-label="Lagless home"><svg viewBox="0 0 154.19 40" height="26" aria-label="Lagless" role="img"><path class="b1" d="M10 8H24L20 20H6Z" fill="#101828"/><path class="b2" d="M20 20H34L30 32H16Z" fill="#3D4FF2"/><path transform="translate(40.634 32) scale(0.033803)" d="M198 0Q139 0 104.5 -30.0Q70 -60 70 -126V-710H198V-139Q198 -99 238 -99H277V0ZM477.0 12Q393.0 12 342.0 -26.0Q291.0 -64 291.0 -134Q291.0 -203 334.0 -242.0Q377.0 -281 465.0 -298L642.0 -333Q642.0 -447 539.0 -447Q493.0 -447 466.0 -425.5Q439.0 -404 430.0 -364L300.0 -370Q316.0 -454 378.0 -500.0Q440.0 -546 539.0 -546Q653.0 -546 711.5 -488.5Q770.0 -431 770.0 -324V-130Q770.0 -109 777.5 -101.0Q785.0 -93 800.0 -93H817.0V0Q800.0 4 770.0 4Q727.0 4 697.0 -14.0Q667.0 -32 659.0 -81V-82Q639.0 -40 590.5 -14.0Q542.0 12 477.0 12ZM503.0 -81Q567.0 -81 604.5 -118.0Q642.0 -155 642.0 -216V-246L504.0 -218Q461.0 -209 442.5 -191.5Q424.0 -174 424.0 -146Q424.0 -81 503.0 -81ZM1085.0 162Q980.0 162 920.0 120.0Q860.0 78 842.0 10L974.0 1Q984.0 32 1008.5 48.5Q1033.0 65 1085.0 65Q1144.0 65 1176.0 38.5Q1208.0 12 1208.0 -44V-112Q1189.0 -73 1147.0 -49.5Q1105.0 -26 1053.0 -26Q987.0 -26 935.5 -58.5Q884.0 -91 855.0 -149.0Q826.0 -207 826.0 -285Q826.0 -362 855.0 -420.5Q884.0 -479 934.5 -512.5Q985.0 -546 1051.0 -546Q1108.0 -546 1150.0 -520.0Q1192.0 -494 1212.0 -451V-534H1337.0V-47Q1337.0 56 1268.0 109.0Q1199.0 162 1085.0 162ZM1083.0 -126Q1140.0 -126 1174.5 -168.5Q1209.0 -211 1209.0 -286Q1210.0 -360 1175.5 -403.0Q1141.0 -446 1083.0 -446Q1024.0 -446 991.5 -402.5Q959.0 -359 959.0 -286Q959.0 -213 992.5 -169.5Q1026.0 -126 1083.0 -126ZM1560.0 0Q1501.0 0 1466.5 -30.0Q1432.0 -60 1432.0 -126V-710H1560.0V-139Q1560.0 -99 1600.0 -99H1639.0V0ZM1915.0 12Q1835.0 12 1776.0 -22.5Q1717.0 -57 1685.0 -120.0Q1653.0 -183 1653.0 -267Q1653.0 -351 1685.0 -414.0Q1717.0 -477 1775.5 -511.5Q1834.0 -546 1912.0 -546Q1988.0 -546 2045.0 -512.0Q2102.0 -478 2133.5 -414.0Q2165.0 -350 2165.0 -260V-231H1786.0Q1789.0 -161 1824.0 -125.5Q1859.0 -90 1916.0 -90Q2003.0 -90 2027.0 -164L2158.0 -156Q2136.0 -78 2071.5 -33.0Q2007.0 12 1915.0 12ZM1786.0 -317H2033.0Q2028.0 -382 1995.5 -413.5Q1963.0 -445 1912.0 -445Q1860.0 -445 1827.0 -412.0Q1794.0 -379 1786.0 -317ZM2447.0 12Q2325.0 12 2265.0 -39.0Q2205.0 -90 2199.0 -168L2330.0 -174Q2337.0 -132 2363.5 -109.0Q2390.0 -86 2448.0 -86Q2493.0 -86 2516.5 -100.5Q2540.0 -115 2540.0 -146Q2540.0 -164 2531.5 -176.0Q2523.0 -188 2498.5 -197.0Q2474.0 -206 2427.0 -215Q2346.0 -229 2300.0 -249.5Q2254.0 -270 2235.5 -301.0Q2217.0 -332 2217.0 -378Q2217.0 -452 2274.5 -499.0Q2332.0 -546 2443.0 -546Q2520.0 -546 2569.5 -521.5Q2619.0 -497 2644.5 -456.5Q2670.0 -416 2674.0 -366L2544.0 -360Q2542.0 -398 2518.0 -423.0Q2494.0 -448 2441.0 -448Q2396.0 -448 2372.5 -430.0Q2349.0 -412 2349.0 -382Q2349.0 -350 2371.5 -334.5Q2394.0 -319 2454.0 -309Q2536.0 -297 2584.0 -276.0Q2632.0 -255 2652.5 -223.5Q2673.0 -192 2673.0 -148Q2673.0 -71 2611.5 -29.5Q2550.0 12 2447.0 12ZM2955.0 12Q2833.0 12 2773.0 -39.0Q2713.0 -90 2707.0 -168L2838.0 -174Q2845.0 -132 2871.5 -109.0Q2898.0 -86 2956.0 -86Q3001.0 -86 3024.5 -100.5Q3048.0 -115 3048.0 -146Q3048.0 -164 3039.5 -176.0Q3031.0 -188 3006.5 -197.0Q2982.0 -206 2935.0 -215Q2854.0 -229 2808.0 -249.5Q2762.0 -270 2743.5 -301.0Q2725.0 -332 2725.0 -378Q2725.0 -452 2782.5 -499.0Q2840.0 -546 2951.0 -546Q3028.0 -546 3077.5 -521.5Q3127.0 -497 3152.5 -456.5Q3178.0 -416 3182.0 -366L3052.0 -360Q3050.0 -398 3026.0 -423.0Q3002.0 -448 2949.0 -448Q2904.0 -448 2880.5 -430.0Q2857.0 -412 2857.0 -382Q2857.0 -350 2879.5 -334.5Q2902.0 -319 2962.0 -309Q3044.0 -297 3092.0 -276.0Q3140.0 -255 3160.5 -223.5Q3181.0 -192 3181.0 -148Q3181.0 -71 3119.5 -29.5Q3058.0 12 2955.0 12Z" fill="#101828"/></svg></a>
+    <div class="links">
+      <a class="opt" href="/#how">How it works</a>
+      <a class="opt" href="/#results">Results</a>
+      <a class="opt" href="/docs/">Docs</a>
+      <a class="opt cur" href="/app/" aria-current="page">Try it</a>
+      <a class="btn" href="https://github.com/thesithunyein/lagless" aria-label="Lagless on GitHub"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.78 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.83 1.19 3.09 0 4.42-2.69 5.39-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></svg>GitHub</a>
+    </div>
+  </div>
+</nav>
+<main class="wrap app">
+  <header class="intro">
+    <div class="crumb"><span class="pair-mark" aria-hidden="true"></span>Try it</div>
+    <h1>Run the loop yourself</h1>
+    <p class="lede">Move the price on Base. Watch the Unichain fee rise about two seconds later. Then trade on Unichain and see who earns.</p>
+  </header>
+
+  <div class="layout">
+    <section class="flow" aria-label="Steps">
+      <div class="card wallet">
+        <div class="row">
+          <div><h3>Wallet</h3><p class="muted" id="w-status">Connect a wallet with a little test ETH on Base Sepolia and Unichain Sepolia.</p></div>
+          <button class="btn dark" id="connect">Connect wallet</button>
+        </div>
+        <p class="hint">Need test ETH? <a href="https://www.alchemy.com/faucets/base-sepolia" target="_blank" rel="noopener">Base Sepolia faucet</a> and <a href="https://docs.unichain.org/docs/tools/faucets" target="_blank" rel="noopener">Unichain Sepolia faucets</a>. The pool tokens are free; this page mints them for you.</p>
+      </div>
+
+      <div class="card step" id="s1">
+        <div class="num">1</div>
+        <div class="body">
+          <h3>Move the price on Base</h3>
+          <p class="muted">Swap on the Base pool. This is the price move other chains react to.</p>
+          <div class="controls">
+            <div class="seg" role="radiogroup" aria-label="Direction">
+              <button role="radio" aria-checked="true" data-zfo="1" class="on">Buy lWETH</button>
+              <button role="radio" aria-checked="false" data-zfo="0">Sell lWETH</button>
+            </div>
+            <label class="amt"><input id="amt" type="number" min="1" max="50" step="1" value="20" inputmode="numeric"><span>tokens</span></label>
+          </div>
+          <button class="btn dark wide" id="go1" disabled>Swap on Base</button>
+          <ol class="log" id="log1"></ol>
+        </div>
+      </div>
+
+      <div class="card step" id="s2">
+        <div class="num">2</div>
+        <div class="body">
+          <h3>Trade on Unichain</h3>
+          <p class="muted">Make the same trade on the Lagless pool, like an arbitrage bot would. The higher fee lasts about 10 seconds, so be quick.</p>
+          <button class="btn dark wide" id="go2" disabled>Swap on Unichain</button>
+          <ol class="log" id="log2"></ol>
+          <div class="result" id="result" hidden></div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="live card" aria-live="polite">
+      <div class="lv-head"><img src="/logos/unichain-star.svg" alt=""><span>Lagless pool fee on Unichain</span></div>
+      <div class="big" id="fee">…</div>
+      <div class="state" id="state"><i></i><span>Normal fee</span></div>
+      <div class="meter"><div id="meter"></div></div>
+      <ol class="tl" id="tl">
+        <li data-k="base"><b>Base swap confirmed</b><span>Waiting for step 1</span></li>
+        <li data-k="shield"><b>Reactive raised the fee</b><span>–</span></li>
+        <li data-k="trade"><b>Your Unichain trade</b><span>–</span></li>
+      </ol>
+      <p class="fine">Read live from Unichain Sepolia every second. Reactive contract <a href="https://lasna.reactscan.net/address/0x1eee3853d5C0dEB9702eC4e7EEd205ff58d878e5" target="_blank" rel="noopener">0x1eee…78e5</a></p>
+    </aside>
+  </div>
+</main>
+
+<script>
+const ZERO = "0x0000000000000000000000000000000000000000";
+const TOK = { t0: "0x41eFe7a3A065a5094Eb88c9F486238Fc227E7893", t1: "0x9063cE4EBFBA81206E621158B7586024eeC6d0B3" }; // t0 = lUSDC, t1 = lWETH
+const HOOK = "0x03A696938EF795a0B1496FC407CF7B53F4702080";
+const LAG_POOL = "0x5c20493e45711a98dd4fd618626e5dd17b13d3c3d68690c9a4c7c70460bcbfd9";
+const T = { swap: "0x40e9cecb9f5f1f1c5b9c97dec2917b7ee92e57ba5563708daca94dd84ad7112f", raised: "0x13f844c579f5de0779be5745dd10a1b97c38b333948071ca46f11c1660f578c8" };
+const CH = {
+  base: { id: 84532, hex: "0x14a34", name: "Base Sepolia", rpc: ["https://base-sepolia-rpc.publicnode.com", "https://sepolia.base.org"], add: "https://sepolia.base.org", pm: "0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408", router: "0x8B5bcC363ddE2614281aD875bad385E0A785D3B9", scan: "https://sepolia.basescan.org", fee: 3000, hooks: ZERO },
+  uni: { id: 1301, hex: "0x515", name: "Unichain Sepolia", rpc: ["https://unichain-sepolia-rpc.publicnode.com", "https://sepolia.unichain.org"], add: "https://sepolia.unichain.org", pm: "0x00B036B58a818B1BC34d502D3fE730Db729e62AC", router: "0x9140a78c1A137c7fF1c151EC8231272aF78a99A4", scan: "https://sepolia.uniscan.xyz", fee: 0x800000, hooks: HOOK },
+};
+const MIN_SQRT = 4295128739n, MAX_SQRT = 1461446703485210103287273052203988822378723970342n, MAXU = (1n << 256n) - 1n, E18 = 10n ** 18n;
+const $ = (id) => document.getElementById(id);
+const pad = (h) => h.replace(/^0x/, "").padStart(64, "0");
+const enc = {
+  addr: (a) => pad(a.toLowerCase()),
+  uint: (n) => pad(BigInt(n).toString(16)),
+  int: (n) => { let v = BigInt(n); if (v < 0n) v = (1n << 256n) + v; return pad(v.toString(16)); },
+  bool: (b) => pad(b ? "1" : "0"),
+};
+const word = (d, i) => BigInt("0x" + d.slice(2 + 64 * i, 2 + 64 * (i + 1)));
+const signed = (v) => (v >= 1n << 255n ? v - (1n << 256n) : v);
+const pct = (p) => (Number(p) / 10000).toFixed(2) + "%";
+const fmt = (wei, d = 4) => (Number(wei) / 1e18).toFixed(d).replace(/\.?0+$/, "");
+const short = (a) => a.slice(0, 6) + "…" + a.slice(-4);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const symIn = (zfo) => (zfo ? "lUSDC" : "lWETH");
+
+async function rpc(c, method, params) {
+  let last;
+  for (const url of CH[c].rpc) {
+    try {
+      const r = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }) });
+      const j = await r.json();
+      if (j.error) throw new Error(j.error.message);
+      return j.result;
+    } catch (e) { last = e; }
+  }
+  throw last;
+}
+const call = (c, to, data) => rpc(c, "eth_call", [{ to, data }, "latest"]);
+const blockTs = async (c, n) => parseInt((await rpc(c, "eth_getBlockByNumber", [n, false])).timestamp, 16);
+
+function swapData(c, zfo, amt) {
+  const k = CH[c];
+  return "0x2229d0b4" + enc.addr(TOK.t0) + enc.addr(TOK.t1) + enc.uint(k.fee) + enc.int(60) + enc.addr(k.hooks)
+    + enc.bool(zfo) + enc.int(-amt) + enc.uint(zfo ? MIN_SQRT + 1n : MAX_SQRT - 1n)
+    + enc.bool(false) + enc.bool(false) + enc.uint(0x160) + enc.uint(0);
+}
+
+// ---------- wallet ----------
+const eth = window.ethereum;
+let user = null;
+
+async function connect() {
+  if (!eth) { $("w-status").textContent = "No wallet found. Install MetaMask, Rabby or Coinbase Wallet, then reload this page."; return; }
+  try {
+    const [a] = await eth.request({ method: "eth_requestAccounts" });
+    setUser(a);
+  } catch (e) { $("w-status").textContent = niceErr(e); }
+}
+async function setUser(a) {
+  user = a || null;
+  document.querySelector(".wallet").classList.toggle("ok", !!user);
+  $("connect").textContent = user ? short(user) : "Connect wallet";
+  $("go1").disabled = !user;
+  if (!user) { $("w-status").textContent = "Connect a wallet with a little test ETH on Base Sepolia and Unichain Sepolia."; return; }
+  $("w-status").textContent = "Connected. Checking balances…";
+  try {
+    const [b, u] = await Promise.all([rpc("base", "eth_getBalance", [user, "latest"]), rpc("uni", "eth_getBalance", [user, "latest"])]);
+    $("w-status").textContent = `Base Sepolia: ${fmt(BigInt(b))} ETH. Unichain Sepolia: ${fmt(BigInt(u))} ETH.`;
+  } catch { $("w-status").textContent = "Connected."; }
+}
+if (eth) {
+  eth.on?.("accountsChanged", (a) => setUser(a[0]));
+  eth.request({ method: "eth_accounts" }).then((a) => a[0] && setUser(a[0])).catch(() => {});
+}
+
+async function ensureChain(c) {
+  const k = CH[c];
+  if ((await eth.request({ method: "eth_chainId" })).toLowerCase() === k.hex) return;
+  try {
+    await eth.request({ method: "wallet_switchEthereumChain", params: [{ chainId: k.hex }] });
+  } catch (e) {
+    const code = e.code ?? e.data?.originalError?.code;
+    if (code !== 4902) throw e;
+    await eth.request({ method: "wallet_addEthereumChain", params: [{ chainId: k.hex, chainName: k.name, nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 }, rpcUrls: [k.add], blockExplorerUrls: [k.scan] }] });
+  }
+  if ((await eth.request({ method: "eth_chainId" })).toLowerCase() !== k.hex) throw new Error(`Switch your wallet to ${k.name} and try again.`);
+}
+
+async function send(c, to, data) {
+  const hash = await eth.request({ method: "eth_sendTransaction", params: [{ from: user, to, data }] });
+  for (let i = 0; i < 240; i++) {
+    const r = await rpc(c, "eth_getTransactionReceipt", [hash]).catch(() => null);
+    if (r) { if (r.status !== "0x1") throw new Error("The transaction failed on-chain."); return r; }
+    await sleep(400);
+  }
+  throw new Error("Still waiting for the transaction. Check your wallet.");
+}
+
+function niceErr(e) {
+  const code = e?.code ?? e?.data?.originalError?.code;
+  if (code === 4001) return "Cancelled in your wallet.";
+  const m = String(e?.message || e);
+  if (/insufficient funds/i.test(m)) return "Not enough test ETH for gas. Use the faucet links above.";
+  return m.length > 140 ? m.slice(0, 140) + "…" : m;
+}
+
+function logLine(list, text) {
+  const li = document.createElement("li");
+  li.textContent = text;
+  $(list).appendChild(li);
+  return {
+    ok(t, href) { li.className = "ok"; if (t) li.textContent = t; if (href) { const a = document.createElement("a"); a.href = href; a.target = "_blank"; a.rel = "noopener"; a.textContent = "View"; li.appendChild(a); } },
+    err(t) { li.className = "err"; li.textContent = t; },
+  };
+}
+
+async function prepare(c, zfo, amt, list) {
+  const k = CH[c], token = zfo ? TOK.t0 : TOK.t1;
+  const gas = BigInt(await rpc(c, "eth_getBalance", [user, "latest"]));
+  if (gas === 0n) throw new Error(`You need a little test ETH on ${k.name} for gas. Use the faucet links above.`);
+  const bal = BigInt(await call(c, token, "0x70a08231" + enc.addr(user)));
+  if (bal < amt) {
+    const l = logLine(list, `Minting 100 test ${symIn(zfo)} on ${k.name}`);
+    const mintAmt = amt > 100n * E18 ? amt : 100n * E18;
+    const r = await send(c, token, "0x40c10f19" + enc.addr(user) + enc.uint(mintAmt));
+    l.ok(`Minted 100 test ${symIn(zfo)}`, `${k.scan}/tx/${r.transactionHash}`);
+  }
+  const allowance = BigInt(await call(c, token, "0xdd62ed3e" + enc.addr(user) + enc.addr(k.router)));
+  if (allowance < amt) {
+    const l = logLine(list, `Allowing the Uniswap router to use your ${symIn(zfo)}`);
+    const r = await send(c, token, "0x095ea7b3" + enc.addr(k.router) + enc.uint(MAXU));
+    l.ok(`Router allowed to use ${symIn(zfo)}`, `${k.scan}/tx/${r.transactionHash}`);
+  }
+}
+
+// ---------- timeline ----------
+function tl(k, text, href) {
+  const li = document.querySelector(`#tl li[data-k="${k}"]`);
+  li.classList.toggle("ok", !!href);
+  const s = li.querySelector("span");
+  s.textContent = text;
+  if (href) { s.append(" "); const a = document.createElement("a"); a.href = href; a.target = "_blank"; a.rel = "noopener"; a.textContent = "View"; s.appendChild(a); }
+}
+
+// ---------- step 1 ----------
+let zfo = true, round = null;
+document.querySelectorAll(".seg button").forEach((b) => b.addEventListener("click", () => {
+  document.querySelectorAll(".seg button").forEach((x) => { x.classList.toggle("on", x === b); x.setAttribute("aria-checked", x === b); });
+  zfo = b.dataset.zfo === "1";
+}));
+
+$("go1").addEventListener("click", async () => {
+  const n = Math.round(Number($("amt").value));
+  if (!(n >= 1 && n <= 50)) { $("amt").focus(); return; }
+  const amt = BigInt(n) * E18;
+  $("go1").disabled = true; $("go2").disabled = true; $("log1").innerHTML = ""; $("log2").innerHTML = ""; $("result").hidden = true;
+  $("s1").classList.remove("done"); $("s2").classList.remove("done");
+  tl("base", "Waiting for your swap"); tl("shield", "–"); tl("trade", "–");
+  try {
+    const sw = logLine("log1", "Switching to Base Sepolia");
+    await ensureChain("base"); sw.ok("On Base Sepolia");
+    await prepare("base", zfo, amt, "log1");
+    const uniFrom = parseInt(await rpc("uni", "eth_blockNumber", []), 16);
+    const l = logLine("log1", `Swapping ${n} ${symIn(zfo)} on Base`);
+    const r = await send("base", CH.base.router, swapData("base", zfo, amt));
+    const ev = r.logs.find((x) => x.topics[0] === T.swap && x.address.toLowerCase() === CH.base.pm.toLowerCase());
+    const sqrt = word(ev.data, 2), t0 = await blockTs("base", r.blockNumber);
+    l.ok(`Swapped ${n} ${symIn(zfo)} on Base`, `${CH.base.scan}/tx/${r.transactionHash}`);
+    tl("base", "Price moved on Base", `${CH.base.scan}/tx/${r.transactionHash}`);
+    $("s1").classList.add("done");
+    round = { zfo, amt, n, sqrt, t0 };
+    $("go2").disabled = false;
+    tl("shield", "Watching Unichain…");
+    watchShield(uniFrom, sqrt, t0);
+  } catch (e) {
+    logLine("log1", "").err(niceErr(e));
+    tl("base", "Waiting for step 1");
+  } finally { $("go1").disabled = !user; }
+});
+
+async function watchShield(from, sqrt, t0) {
+  const until = Date.now() + 60000;
+  while (Date.now() < until) {
+    try {
+      const to = parseInt(await rpc("uni", "eth_blockNumber", []), 16);
+      const ls = await rpc("uni", "eth_getLogs", [{ address: HOOK, topics: [T.raised], fromBlock: "0x" + from.toString(16), toBlock: "0x" + to.toString(16) }]);
+      const hit = ls.find((x) => word(x.data, 2) === sqrt);
+      if (hit) {
+        const t1 = await blockTs("uni", hit.blockNumber);
+        tl("shield", `Fee raised to ${pct(word(hit.data, 0))}, ${Math.max(0, t1 - t0)} s after your swap`, `${CH.uni.scan}/tx/${hit.transactionHash}`);
+        return;
+      }
+    } catch {}
+    await sleep(700);
+  }
+  tl("shield", "No fee change within 60 s. The move may be under 0.20%, or the prices were already apart.");
+}
+
+// ---------- step 2 ----------
+$("go2").addEventListener("click", async () => {
+  if (!round) return;
+  $("go2").disabled = true; $("log2").innerHTML = ""; $("result").hidden = true;
+  const { zfo: z, amt, n } = round;
+  try {
+    const sw = logLine("log2", "Switching to Unichain Sepolia");
+    await ensureChain("uni"); sw.ok("On Unichain Sepolia");
+    await prepare("uni", z, amt, "log2");
+    const l = logLine("log2", `Swapping ${n} ${symIn(z)} on the Lagless pool`);
+    const r = await send("uni", CH.uni.router, swapData("uni", z, amt));
+    const ev = r.logs.find((x) => x.topics[0] === T.swap && x.topics[1].toLowerCase() === LAG_POOL);
+    const fee = word(ev.data, 5), a0 = signed(word(ev.data, 0)), a1 = signed(word(ev.data, 1));
+    const paidIn = z ? -a0 : -a1, lp = paidIn * fee / 1000000n, normal = paidIn * 3000n / 1000000n;
+    l.ok(`Swapped on the Lagless pool, fee ${pct(fee)}`, `${CH.uni.scan}/tx/${r.transactionHash}`);
+    tl("trade", `You paid ${pct(fee)}`, `${CH.uni.scan}/tx/${r.transactionHash}`);
+    $("s2").classList.add("done");
+    const res = $("result"); res.hidden = false; res.textContent = "";
+    if (fee > 3000n) {
+      res.className = "result win";
+      const up = Math.round(100 * (Number(lp) / Number(normal) - 1));
+      res.innerHTML = `You paid <b>${pct(fee)}</b>. LPs earned <b>${fmt(lp)} ${symIn(z)}</b> from your trade. A normal 0.30% pool would have paid them ${fmt(normal)}. That's <b>+${up}%</b> for LPs.`;
+    } else {
+      res.className = "result";
+      res.innerHTML = `You paid the normal <b>0.30%</b>. The higher fee lasts about 10 seconds, and it had ended or not yet started when your trade landed. Run step 1 again and trade faster to see it.`;
+    }
+    round = null;
+  } catch (e) {
+    logLine("log2", "").err(niceErr(e));
+    $("go2").disabled = false;
+  }
+});
+
+// ---------- live fee ----------
+let expiry = 0;
+async function pollFee() {
+  try {
+    const f = parseInt(await call("uni", HOOK, "0xcaa93ee8" + LAG_POOL.slice(2)), 16);
+    $("fee").textContent = pct(f);
+    const on = f > 3000;
+    document.querySelector(".live").classList.toggle("on", on);
+    const left = Math.max(0, Math.round(expiry - Date.now() / 1000));
+    $("state").querySelector("span").textContent = on ? (left ? `Higher fee, ${left} s left` : "Higher fee") : "Normal fee";
+    $("meter").style.width = on && left ? Math.min(100, left * 10) + "%" : "0%";
+  } catch { $("fee").textContent = "–"; }
+}
+async function pollExpiry() {
+  try {
+    const to = parseInt(await rpc("uni", "eth_blockNumber", []), 16);
+    const ls = await rpc("uni", "eth_getLogs", [{ address: HOOK, topics: [T.raised], fromBlock: "0x" + Math.max(0, to - 90).toString(16), toBlock: "0x" + to.toString(16) }]);
+    if (ls.length) expiry = Number(word(ls[ls.length - 1].data, 1));
+  } catch {}
+}
+$("connect").addEventListener("click", () => (user ? null : connect()));
+pollFee(); pollExpiry(); setInterval(pollFee, 1000); setInterval(pollExpiry, 2500);
+addEventListener("scroll", () => $("nav").classList.toggle("scrolled", scrollY > 4), { passive: true });
+
+</script>
+</body>
+</html>
