@@ -119,6 +119,8 @@
   .fill { height: 100%; width: 0; background: #C9CFD9; transform: skewX(-18deg); transform-origin: left; transition: width 1.2s var(--ease); }
   .fill.blue { background: var(--blue); }
   .bar output { text-align: right; color: var(--ink); font-weight: 500; }
+  .grp { margin: 22px 0 0; font-size: 14px; font-weight: 600; color: var(--ink); display: flex; gap: 8px; align-items: baseline; }
+  .grp small { font-weight: 400; color: var(--faint); font-size: 13px; }
   .note { margin: 18px 0 0; color: var(--faint); font-size: 13.5px; }
   .feed { list-style: none; margin: 0; padding: 0; }
   .feed li { display: grid; grid-template-columns: 30px 1fr auto; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); font-size: 14px; }
@@ -327,16 +329,20 @@
       <p class="sub">Read straight from Base and Unichain every time you load this page.</p>
       <div class="stats">
         <div class="stat"><b id="s-latency" data-suffix="s">–</b><span>Median time from a Base move to a higher fee</span></div>
-        <div class="stat"><b id="s-hit">–</b><span>Price moves where the fee went up</span></div>
-        <div class="stat"><b id="s-uplift" data-prefix="+" data-suffix="%">–</b><span>More fees for LPs on the same trades</span></div>
+        <div class="stat"><b id="s-uplift" data-prefix="+" data-suffix="%">–</b><span>More LP fees when arbitrage lands after the fee rises</span></div>
+        <div class="stat"><b id="s-hit">–</b><span>Arbitrage trades that paid the higher fee</span></div>
       </div>
       <div class="grid2">
         <div class="card">
           <h3>LP fees on identical trades</h3>
-          <p class="muted">Same pair, same liquidity, same arbitrage.</p>
+          <p class="muted">Same pair, same liquidity, same arbitrage. Split by how fast the arbitrage came.</p>
+          <h4 class="grp">After the fee rose <small id="n-slow"></small></h4>
           <div class="bar"><span>Standard pool</span><div class="track"><div class="fill" id="b-ctl"></div></div><output id="v-ctl">–</output></div>
           <div class="bar"><span>With Lagless</span><div class="track"><div class="fill blue" id="b-lag"></div></div><output id="v-lag">–</output></div>
-          <p class="note">Arbitrage that lands before the fee rises still pays the normal fee.</p>
+          <h4 class="grp">Before the fee rose <small id="n-fast"></small></h4>
+          <div class="bar"><span>Standard pool</span><div class="track"><div class="fill" id="b-ctl2"></div></div><output id="v-ctl2">–</output></div>
+          <div class="bar"><span>With Lagless</span><div class="track"><div class="fill blue" id="b-lag2"></div></div><output id="v-lag2">–</output></div>
+          <p class="note">A bot that trades within about 2 seconds of the Base move still pays 0.30%. Lagless makes the free window shorter. It does not close it.</p>
         </div>
         <div class="card">
           <h3>Recent activity</h3>
@@ -515,15 +521,19 @@ async function load() {
 
 function render(d) {
   const paired = d.rounds.filter((r) => r.lag && r.ctl);
-  const lag = paired.reduce((s, r) => s + r.lag.amountIn * r.lag.fee / 1e6, 0);
-  const ctl = paired.reduce((s, r) => s + r.ctl.amountIn * r.ctl.fee / 1e6, 0);
+  const slow = paired.filter((r) => r.lag.fee > r.ctl.fee), fast = paired.filter((r) => r.lag.fee <= r.ctl.fee);
+  const sum = (rs, k) => rs.reduce((s, r) => s + r[k].amountIn * r[k].fee / 1e6, 0);
+  const lag = sum(slow, "lag"), ctl = sum(slow, "ctl"), lag2 = sum(fast, "lag"), ctl2 = sum(fast, "ctl");
+  const trades = (n) => `${n} trade${n === 1 ? "" : "s"}`;
   const go = () => {
     if (d.rounds.length) countUp($("s-latency"), median(d.rounds.map((r) => r.latency)));
-    $("s-hit").textContent = paired.length ? `${paired.filter((r) => r.lag.fee > r.ctl.fee).length}/${paired.length}` : "–";
+    $("s-hit").textContent = paired.length ? `${slow.length}/${paired.length}` : "–";
     if (ctl) countUp($("s-uplift"), Math.round(100 * (lag / ctl - 1)));
-    const mx = Math.max(lag, ctl) || 1;
-    $("b-ctl").style.width = (100 * ctl / mx) + "%"; $("b-lag").style.width = (100 * lag / mx) + "%";
+    const mx = Math.max(lag, ctl, lag2, ctl2) || 1, w = (id, v) => { $(id).style.width = (100 * v / mx) + "%"; };
+    w("b-ctl", ctl); w("b-lag", lag); w("b-ctl2", ctl2); w("b-lag2", lag2);
     $("v-ctl").textContent = ctl.toFixed(2); $("v-lag").textContent = lag.toFixed(2);
+    $("v-ctl2").textContent = fast.length ? ctl2.toFixed(2) : "–"; $("v-lag2").textContent = fast.length ? lag2.toFixed(2) : "–";
+    $("n-slow").textContent = trades(slow.length); $("n-fast").textContent = fast.length ? trades(fast.length) : "none recorded yet";
   };
   const target = $("results");
   let done = false;

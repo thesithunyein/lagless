@@ -246,7 +246,8 @@ forge script script/Deploy.s.sol:DeployTokens --rpc-url $UNICHAIN_SEPOLIA_RPC --
 <section id="live-rounds"><h2>Run live rounds</h2>
 <p><code>script/rounds.py</code> moves the Base price, waits for the fee change on Unichain, then sends the same arbitrage trade to the Lagless pool and the control pool. Each round adds a row to <code>results.csv</code>.</p>
 <div class="code"><button class="cc" aria-label="Copy code">Copy</button><pre><code>python3 script/rounds.py --sync 150   # once: align Unichain with the Base price
-python3 script/rounds.py 20           # 20 rounds, alternating direction</code></pre></div>
+python3 script/rounds.py 20           # 20 rounds, alternating direction
+python3 script/rounds.py 10 --race    # arbitrage fires right after the Base move</code></pre></div>
 <p>It signs with the Foundry keystore account <code>lagless</code> and asks for the password once. Latest results are on the <a href="/#results">home page</a>, read live from the chain.</p>
 </section>
 <section id="security"><h2>Security model</h2>

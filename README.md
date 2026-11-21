@@ -137,6 +137,7 @@ POOL=control AMOUNT=... ZERO_FOR_ONE=true forge script script/Swap.s.sol:Swap --
 ```bash
 python3 script/rounds.py --sync 150   # one-time: align the Unichain pools with the Base price
 python3 script/rounds.py 20           # 20 rounds, alternating direction
+python3 script/rounds.py 10 --race    # arbitrage fires right after the Base move (fast bot)
 ```
 
 It signs with the Foundry keystore account `lagless` and asks for the password once per run.
@@ -174,7 +175,19 @@ Base swap → Unichain fee change: **2 s** (block timestamps, 1 s resolution).
 | Shield fee for a ~0.4% Base move | 0.495–0.50% (vs 0.30% base) |
 | LP fees from the same arbitrage trades | **2.388** (Lagless) vs **1.440** (control) → **+66%** |
 
-What this shows: an arbitrage that lands about 2 s or more after the Base move pays LPs ~66% more in this setup. An arbitrage faster than the callback still pays the base fee; on legacy Reactive (~7 s blocks) that unprotected window would be several times longer.
+### Fast arbitrage (race mode)
+
+The rounds above wait for the shield before trading, so they show the best case. `python3 script/rounds.py 10 --race` sends the arbitrage the moment the Base swap confirms, like a fast bot would.
+
+Race results: _pending, run in progress._
+
+### What this means
+
+- Arbitrage that lands **after** the callback (about 2 s) pays LPs **+66%** in this setup.
+- A bot that trades **faster** than the callback still pays the base 0.30%. Lagless shortens the free window; it does not close it.
+- On legacy Reactive (~7 s blocks) that free window would be several times longer. Omni's ~1 s blocks are what make this useful at all.
+
+The website splits every round into these two groups, read live from the chain.
 
 ## Trust model
 

@@ -4,4 +4,3 @@ broadcast/
 .env
 node_modules/
 __pycache__/
-results.csv
