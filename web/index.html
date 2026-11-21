@@ -86,7 +86,12 @@
 
   /* Logos strip */
   .proof { display: flex; align-items: center; justify-content: center; gap: 14px 40px; flex-wrap: wrap; padding: 48px 0 0; color: var(--faint); font-size: 14px; }
-  .proof b { color: var(--body); font-weight: 500; }
+  .proof img { display: block; height: 22px; width: auto; opacity: .5; filter: grayscale(1); transition: opacity .2s, filter .2s; }
+  .proof a:hover img { opacity: 1; filter: none; }
+  .proof .uni-l { height: 26px; }
+  .chain { display: inline-flex; align-items: center; gap: 6px; }
+  .copy { margin-left: 8px; font: 500 12px/1 var(--font); color: var(--faint); background: none; border: 1px solid var(--line); border-radius: 6px; padding: 4px 7px; cursor: pointer; }
+  .copy:hover { color: var(--ink); border-color: #CBD1DB; }
 
   section { padding: 120px 0 0; }
   .kicker { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--body); }
@@ -210,7 +215,7 @@
     <div class="stage">
       <div class="screen">
         <div class="screen-top">
-          <div class="pool"><span class="pair-mark" aria-hidden="true"></span><div><b>lWETH / lUSDC</b> <span>Unichain</span></div></div>
+          <div class="pool"><span class="chain"><svg width="18" height="18" viewBox="0 0 41 41" aria-hidden="true"><path d="M40.8892 19.9632C30.0485 19.9632 21.2697 11.1756 21.2697 0.34375H20.5087V19.9632H0.88916V20.7243C11.7299 20.7243 20.5087 29.5119 20.5087 40.3437H21.2697V20.7243H40.8892V19.9632Z" fill="#F50DB4"/></svg></span><div><b>lWETH / lUSDC</b> <span>Unichain Sepolia</span></div></div>
           <div class="fee" id="fee" aria-live="polite">Fee <strong id="fee-v">…</strong></div>
         </div>
         <svg class="anim" viewBox="0 0 520 250" role="img" aria-label="The Base price moves first. The Unichain price follows later. Lagless raises the fee in between.">
@@ -224,8 +229,8 @@
           <g font-family="Geist, system-ui" font-size="12" fill="#99A1AF"><text x="214" y="238" text-anchor="middle">Base moves</text><text x="330" y="238" text-anchor="middle">Unichain follows</text></g>
         </svg>
         <div class="legend">
-          <span><i style="background:#101828"></i>Base price</span>
-          <span><i style="background:#3D4FF2"></i>Unichain price</span>
+          <span><i style="background:#101828"></i><span class="chain"><svg width="11" height="11" viewBox="0 0 10 10" aria-hidden="true"><rect width="10" height="10" rx="1.4" fill="#0000FF"/></svg>Base price</span></span>
+          <span><i style="background:#3D4FF2"></i><span class="chain"><svg width="12" height="12" viewBox="0 0 41 41" aria-hidden="true"><path d="M40.8892 19.9632C30.0485 19.9632 21.2697 11.1756 21.2697 0.34375H20.5087V19.9632H0.88916V20.7243C11.7299 20.7243 20.5087 29.5119 20.5087 40.3437H21.2697V20.7243H40.8892V19.9632Z" fill="#F50DB4"/></svg>Unichain price</span></span>
           <span><i style="background:#F5A524"></i>Higher fee</span>
         </div>
       </div>
@@ -233,7 +238,11 @@
   </div>
 
   <div class="wrap proof" aria-label="Built with">
-    <span>Built on</span><b>Uniswap v4</b><b>Reactive Network</b><b>Base</b><b>Unichain</b>
+    <span>Built on</span>
+    <a href="https://uniswap.org" target="_blank" rel="noopener" aria-label="Uniswap"><img class="uni-l" src="/logos/uniswap.svg" alt="Uniswap"></a>
+    <a href="https://reactive.network" target="_blank" rel="noopener" aria-label="Reactive Network"><img src="/logos/reactive.svg" alt="Reactive Network"></a>
+    <a href="https://base.org" target="_blank" rel="noopener" aria-label="Base"><img src="/logos/base.svg" alt="Base"></a>
+    <a href="https://www.unichain.org" target="_blank" rel="noopener" aria-label="Unichain"><img src="/logos/unichain.svg" alt="Unichain"></a>
   </div>
 
   <section id="how" class="reveal">
@@ -322,8 +331,8 @@
   <div class="wrap foot">
     <div><svg viewBox="0 0 154.19 40" height="22" aria-label="Lagless" role="img" style="display:block"><path d="M10 8H24L20 20H6Z" fill="#101828"/><path d="M20 20H34L30 32H16Z" fill="#3D4FF2"/><path transform="translate(40.634 32) scale(0.033803)" d="M198 0Q139 0 104.5 -30.0Q70 -60 70 -126V-710H198V-139Q198 -99 238 -99H277V0ZM477.0 12Q393.0 12 342.0 -26.0Q291.0 -64 291.0 -134Q291.0 -203 334.0 -242.0Q377.0 -281 465.0 -298L642.0 -333Q642.0 -447 539.0 -447Q493.0 -447 466.0 -425.5Q439.0 -404 430.0 -364L300.0 -370Q316.0 -454 378.0 -500.0Q440.0 -546 539.0 -546Q653.0 -546 711.5 -488.5Q770.0 -431 770.0 -324V-130Q770.0 -109 777.5 -101.0Q785.0 -93 800.0 -93H817.0V0Q800.0 4 770.0 4Q727.0 4 697.0 -14.0Q667.0 -32 659.0 -81V-82Q639.0 -40 590.5 -14.0Q542.0 12 477.0 12ZM503.0 -81Q567.0 -81 604.5 -118.0Q642.0 -155 642.0 -216V-246L504.0 -218Q461.0 -209 442.5 -191.5Q424.0 -174 424.0 -146Q424.0 -81 503.0 -81ZM1085.0 162Q980.0 162 920.0 120.0Q860.0 78 842.0 10L974.0 1Q984.0 32 1008.5 48.5Q1033.0 65 1085.0 65Q1144.0 65 1176.0 38.5Q1208.0 12 1208.0 -44V-112Q1189.0 -73 1147.0 -49.5Q1105.0 -26 1053.0 -26Q987.0 -26 935.5 -58.5Q884.0 -91 855.0 -149.0Q826.0 -207 826.0 -285Q826.0 -362 855.0 -420.5Q884.0 -479 934.5 -512.5Q985.0 -546 1051.0 -546Q1108.0 -546 1150.0 -520.0Q1192.0 -494 1212.0 -451V-534H1337.0V-47Q1337.0 56 1268.0 109.0Q1199.0 162 1085.0 162ZM1083.0 -126Q1140.0 -126 1174.5 -168.5Q1209.0 -211 1209.0 -286Q1210.0 -360 1175.5 -403.0Q1141.0 -446 1083.0 -446Q1024.0 -446 991.5 -402.5Q959.0 -359 959.0 -286Q959.0 -213 992.5 -169.5Q1026.0 -126 1083.0 -126ZM1560.0 0Q1501.0 0 1466.5 -30.0Q1432.0 -60 1432.0 -126V-710H1560.0V-139Q1560.0 -99 1600.0 -99H1639.0V0ZM1915.0 12Q1835.0 12 1776.0 -22.5Q1717.0 -57 1685.0 -120.0Q1653.0 -183 1653.0 -267Q1653.0 -351 1685.0 -414.0Q1717.0 -477 1775.5 -511.5Q1834.0 -546 1912.0 -546Q1988.0 -546 2045.0 -512.0Q2102.0 -478 2133.5 -414.0Q2165.0 -350 2165.0 -260V-231H1786.0Q1789.0 -161 1824.0 -125.5Q1859.0 -90 1916.0 -90Q2003.0 -90 2027.0 -164L2158.0 -156Q2136.0 -78 2071.5 -33.0Q2007.0 12 1915.0 12ZM1786.0 -317H2033.0Q2028.0 -382 1995.5 -413.5Q1963.0 -445 1912.0 -445Q1860.0 -445 1827.0 -412.0Q1794.0 -379 1786.0 -317ZM2447.0 12Q2325.0 12 2265.0 -39.0Q2205.0 -90 2199.0 -168L2330.0 -174Q2337.0 -132 2363.5 -109.0Q2390.0 -86 2448.0 -86Q2493.0 -86 2516.5 -100.5Q2540.0 -115 2540.0 -146Q2540.0 -164 2531.5 -176.0Q2523.0 -188 2498.5 -197.0Q2474.0 -206 2427.0 -215Q2346.0 -229 2300.0 -249.5Q2254.0 -270 2235.5 -301.0Q2217.0 -332 2217.0 -378Q2217.0 -452 2274.5 -499.0Q2332.0 -546 2443.0 -546Q2520.0 -546 2569.5 -521.5Q2619.0 -497 2644.5 -456.5Q2670.0 -416 2674.0 -366L2544.0 -360Q2542.0 -398 2518.0 -423.0Q2494.0 -448 2441.0 -448Q2396.0 -448 2372.5 -430.0Q2349.0 -412 2349.0 -382Q2349.0 -350 2371.5 -334.5Q2394.0 -319 2454.0 -309Q2536.0 -297 2584.0 -276.0Q2632.0 -255 2652.5 -223.5Q2673.0 -192 2673.0 -148Q2673.0 -71 2611.5 -29.5Q2550.0 12 2447.0 12ZM2955.0 12Q2833.0 12 2773.0 -39.0Q2713.0 -90 2707.0 -168L2838.0 -174Q2845.0 -132 2871.5 -109.0Q2898.0 -86 2956.0 -86Q3001.0 -86 3024.5 -100.5Q3048.0 -115 3048.0 -146Q3048.0 -164 3039.5 -176.0Q3031.0 -188 3006.5 -197.0Q2982.0 -206 2935.0 -215Q2854.0 -229 2808.0 -249.5Q2762.0 -270 2743.5 -301.0Q2725.0 -332 2725.0 -378Q2725.0 -452 2782.5 -499.0Q2840.0 -546 2951.0 -546Q3028.0 -546 3077.5 -521.5Q3127.0 -497 3152.5 -456.5Q3178.0 -416 3182.0 -366L3052.0 -360Q3050.0 -398 3026.0 -423.0Q3002.0 -448 2949.0 -448Q2904.0 -448 2880.5 -430.0Q2857.0 -412 2857.0 -382Q2857.0 -350 2879.5 -334.5Q2902.0 -319 2962.0 -309Q3044.0 -297 3092.0 -276.0Q3140.0 -255 3160.5 -223.5Q3181.0 -192 3181.0 -148Q3181.0 -71 3119.5 -29.5Q3058.0 12 2955.0 12Z" fill="#101828"/></svg><p style="margin:12px 0 0">Arbitrage should pay your LPs.</p></div>
     <dl>
-      <dt>Reactive contract</dt><dd><a href="https://lasna.reactscan.net/address/0x1eee3853d5C0dEB9702eC4e7EEd205ff58d878e5">0x1eee…78e5</a></dd>
-      <dt>Unichain hook</dt><dd><a href="https://sepolia.uniscan.xyz/address/0x03A696938EF795a0B1496FC407CF7B53F4702080">0x03A6…2080</a></dd>
+      <dt>Reactive contract</dt><dd><a href="https://lasna.reactscan.net/address/0x1eee3853d5C0dEB9702eC4e7EEd205ff58d878e5" target="_blank" rel="noopener">0x1eee…78e5</a><button class="copy" data-copy="0x1eee3853d5C0dEB9702eC4e7EEd205ff58d878e5">Copy</button></dd>
+      <dt>Unichain hook</dt><dd><a href="https://sepolia.uniscan.xyz/address/0x03A696938EF795a0B1496FC407CF7B53F4702080" target="_blank" rel="noopener">0x03A6…2080</a><button class="copy" data-copy="0x03A696938EF795a0B1496FC407CF7B53F4702080">Copy</button></dd>
       <dt>Source</dt><dd><a href="https://github.com/thesithunyein/lagless">github.com/thesithunyein/lagless</a></dd>
     </dl>
   </div>
@@ -443,10 +452,10 @@ function render(d) {
   setTimeout(once, 6000);
 
   const tag = {
-    base: `<span class="tag" style="background:#F1F2F5"><svg viewBox="0 0 14 14"><path d="M4 2h6L8 7H2Z" fill="#101828"/></svg></span>`,
+    base: `<span class="tag" style="background:#EEF0FF" title="Base"><svg viewBox="0 0 10 10"><rect x="1" y="1" width="8" height="8" rx="1.2" fill="#0000FF"/></svg></span>`,
     up: `<span class="tag" style="background:#FFF5E1"><svg viewBox="0 0 24 24" fill="none" stroke="#B87400" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span>`,
     down: `<span class="tag" style="background:#F5F6F9"><svg viewBox="0 0 24 24" fill="none" stroke="#6A7282" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg></span>`,
-    trade: `<span class="tag" style="background:#EEF0FE"><svg viewBox="0 0 14 14"><path d="M6 7h6l-2 5H4Z" fill="#3D4FF2"/></svg></span>`,
+    trade: `<span class="tag" style="background:#FEEBF7" title="Unichain"><svg viewBox="0 0 41 41"><path d="M40.8892 19.9632C30.0485 19.9632 21.2697 11.1756 21.2697 0.34375H20.5087V19.9632H0.88916V20.7243C11.7299 20.7243 20.5087 29.5119 20.5087 40.3437H21.2697V20.7243H40.8892V19.9632Z" fill="#F50DB4"/></svg></span>`,
   };
   const items = [];
   d.rounds.forEach((r) => items.push({ ts: r.base.ts, o: 0, t: tag.base, w: "Price moved on Base", u: CFG.base.scan + r.base.tx }));
@@ -467,6 +476,10 @@ async function pollFee() {
   } catch { $("fee-v").textContent = "–"; }
 }
 
+document.querySelectorAll(".copy").forEach((b) => b.addEventListener("click", async () => {
+  try { await navigator.clipboard.writeText(b.dataset.copy); b.textContent = "Copied"; } catch { b.textContent = "Press Ctrl+C"; }
+  setTimeout(() => (b.textContent = "Copy"), 1500);
+}));
 pollFee(); setInterval(pollFee, 3000);
 load().then(render).catch((e) => { const el = $("err"); el.hidden = false; el.textContent = "Live data is unavailable right now. Reload to try again."; console.error(e); });
 </script>
