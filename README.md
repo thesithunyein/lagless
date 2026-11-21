@@ -179,6 +179,21 @@ Base swap → Unichain fee change: **2 s** (block timestamps, 1 s resolution).
 | Shield fee for a ~0.4% Base move | 0.495–0.50% (vs 0.30% base) |
 | LP fees from the same arbitrage trades | **2.388** (Lagless) vs **1.440** (control) → **+66%** |
 
+### Version 2: fee stays up until prices match (Nov 21, 2026)
+
+Same rounds on the v2 contracts, where the raise is renewed while prices stay apart instead of ending after 10 s.
+
+| Metric | Result |
+|---|---|
+| Rounds where the shield landed | **5 / 5** |
+| Base swap → Unichain fee change | **3 s** every round |
+| Shield fee | 0.49–0.50% (vs 0.30%) |
+| LP fees, Lagless vs control | **0.494** vs **0.300** → **+65%** |
+
+Rounds 35–39 ran right after the v2 deploy, before the new hook was funded: the Unichain callback proxy bills the destination contract per callback, and with no balance it stopped delivering after the first one. They are kept in `results.csv` with mode `excluded-hook-unfunded` and left out of the totals. The deploy script now funds the hook by default.
+
+Across all 29 counted after-shield rounds (v1 and v2): shield landed **29 / 29**, LP fees **2.882** vs **1.740** → **+66%**.
+
 ### Fast arbitrage (race mode)
 
 The 24 rounds above wait for the shield before trading, so they show the best case. Race mode sends the arbitrage the moment the Base swap is confirmed, like a bot watching Base over a public RPC:
