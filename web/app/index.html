@@ -79,6 +79,10 @@
   .desc { color: var(--body); margin: 8px 0 0; font-size: 16px; }
   .go { width: 100%; height: 52px; font-size: 16px; margin-top: 24px; border-radius: 12px; }
   .go:disabled { opacity: .55; cursor: progress; }
+  .pick { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; margin-top: 14px; }
+  .pick button { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--white); font: 500 14.5px var(--font); color: var(--ink); cursor: pointer; text-align: left; }
+  .pick button:hover { border-color: var(--blue); background: var(--blue-soft); }
+  .pick img { width: 24px; height: 24px; border-radius: 6px; flex: none; }
   .status { display: flex; align-items: center; gap: 10px; margin: 14px 0 0; font-size: 14.5px; color: var(--body); }
   .spin { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line); border-top-color: var(--blue); animation: spin .8s linear infinite; flex: none; }
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -160,6 +164,7 @@
       <p class="desc" id="desc">You need a little test ETH on Base Sepolia and Unichain Sepolia. Pool tokens are free.</p>
 
       <button class="btn dark go" id="go">Connect wallet</button>
+      <div class="pick" id="pick" hidden></div>
       <p class="status" id="status" hidden><span class="spin"></span><span id="status-t"></span></p>
       <p class="error" id="error" hidden></p>
 
@@ -248,7 +253,17 @@ function swapData(c, zfo, amt) {
 }
 
 // ---------- wallet ----------
-const eth = window.ethereum;
+// Wallet discovery (EIP-6963): lists every installed wallet, so MetaMask is used even when another extension owns window.ethereum.
+const wallets = new Map();
+addEventListener("eip6963:announceProvider", (e) => { const d = e.detail; if (d?.info?.uuid && d.provider) wallets.set(d.info.uuid, d); });
+dispatchEvent(new Event("eip6963:requestProvider"));
+let eth = null;
+const store = { get: (k) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch {} } };
+function useWallet(p) {
+  if (eth === p) return;
+  eth = p;
+  eth.on?.("accountsChanged", (a) => setUser(a[0]));
+}
 let user = null, stage = 0, zfo = true, round = null, busy = false;
 
 const COPY = [
@@ -294,9 +309,31 @@ async function setUser(a) {
     $("faucet").hidden = BigInt(b) > 10n ** 15n && BigInt(u) > 10n ** 15n;
   } catch {}
 }
-if (eth) {
-  eth.on?.("accountsChanged", (a) => setUser(a[0]));
+setTimeout(() => {
+  const last = store.get("lagless.wallet");
+  const w = [...wallets.values()].find((x) => x.info.rdns === last);
+  if (!w) return;
+  useWallet(w.provider);
   eth.request({ method: "eth_accounts" }).then((a) => a[0] && setUser(a[0])).catch(() => {});
+}, 300);
+
+function pickWallet() {
+  const list = [...wallets.values()];
+  if (!list.length) return Promise.resolve(window.ethereum ? { provider: window.ethereum, info: { rdns: "injected", name: "Browser wallet" } } : null);
+  if (list.length === 1) return Promise.resolve(list[0]);
+  return new Promise((resolve) => {
+    const box = $("pick"); box.innerHTML = ""; box.hidden = false;
+    const mm = list.findIndex((w) => /metamask/i.test(w.info.rdns));
+    if (mm > 0) list.unshift(list.splice(mm, 1)[0]);
+    for (const w of list) {
+      const b = document.createElement("button"); b.type = "button";
+      const img = document.createElement("img"); img.src = w.info.icon; img.alt = "";
+      const t = document.createElement("span"); t.textContent = w.info.name;
+      b.append(img, t);
+      b.addEventListener("click", () => { box.hidden = true; resolve(w); });
+      box.appendChild(b);
+    }
+  });
 }
 
 async function ensureChain(c) {
@@ -315,7 +352,9 @@ async function ensureChain(c) {
 
 async function send(c, to, data, what) {
   status(`Confirm in your wallet: ${what}`);
-  const hash = await eth.request({ method: "eth_sendTransaction", params: [{ from: user, to, data }] });
+  const nudge = setTimeout(() => status(`Confirm in your wallet: ${what}. No popup? Click the wallet icon in your toolbar.`), 8000);
+  let hash;
+  try { hash = await eth.request({ method: "eth_sendTransaction", params: [{ from: user, to, data }] }); } finally { clearTimeout(nudge); }
   status(`${what}…`);
   for (let i = 0; i < 240; i++) {
     const r = await rpc(c, "eth_getTransactionReceipt", [hash]).catch(() => null);
@@ -328,6 +367,7 @@ async function send(c, to, data, what) {
 function niceErr(e) {
   const code = e?.code ?? e?.data?.originalError?.code;
   if (code === 4001) return "Cancelled in your wallet. Press the button to try again.";
+  if (code === -32002) return "Your wallet already has a request waiting. Click the wallet icon in your browser toolbar to open it.";
   const m = String(e?.message || e);
   if (/insufficient funds/i.test(m)) { $("faucet").hidden = false; return "Not enough test ETH for gas. Use the faucet links below."; }
   return m.length > 160 ? m.slice(0, 160) + "…" : m;
@@ -360,10 +400,17 @@ function tl(k, text, c, hash) {
 
 // ---------- actions ----------
 async function doConnect() {
-  if (!eth) throw new Error("No wallet found. Install MetaMask, Rabby or Coinbase Wallet, then reload this page.");
-  status("Approve the connection in your wallet");
-  const [a] = await eth.request({ method: "eth_requestAccounts" });
-  status(""); await setUser(a);
+  status("Choose your wallet");
+  const w = await pickWallet();
+  if (!w) throw new Error("No wallet found. Install MetaMask, Rabby or Coinbase Wallet, then reload this page.");
+  useWallet(w.provider);
+  status(`Approve the connection in ${w.info.name}`);
+  const nudge = setTimeout(() => status(`No popup? Click the ${w.info.name} icon in your browser toolbar.`), 6000);
+  try {
+    const [a] = await eth.request({ method: "eth_requestAccounts" });
+    store.set("lagless.wallet", w.info.rdns);
+    status(""); await setUser(a);
+  } finally { clearTimeout(nudge); }
 }
 
 async function doBase() {
