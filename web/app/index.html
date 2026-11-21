@@ -270,7 +270,7 @@ let user = null, stage = 0, zfo = true, round = null, busy = false;
 
 const COPY = [
   { t: "Connect your wallet", d: "You need a little test ETH on Base Sepolia and Unichain Sepolia. Pool tokens are free.", b: "Connect wallet" },
-  { t: "Move the price on Base", d: "Swap on the Base pool. Lagless sees it and raises the Unichain fee about two seconds later.", b: "Swap on Base" },
+  { t: "Move the price on Base", d: "Swap on the Base pool. Lagless sees it and raises the Unichain fee about two seconds later. First run: your wallet also sets up both networks.", b: "Swap on Base" },
   { t: "Trade on Unichain", d: "Make the same trade on the Lagless pool, like an arbitrage bot. The higher fee lasts about 10 seconds.", b: "Swap on Unichain" },
   { t: "Done", d: "That was the full loop: Base, Reactive, Unichain. Run it again in the other direction.", b: "Run again" },
 ];
@@ -452,6 +452,10 @@ async function doBase() {
   const amt = BigInt(n) * E18;
   $("result").hidden = true; $("txs").innerHTML = "";
   tl("base", "–"); tl("shield", "–"); tl("trade", "–");
+  // Get Unichain ready first (free tokens + trading allowance), so step 3 is only a network switch and one swap
+  // and lands inside the ~10 second higher-fee window.
+  await ensureChain("uni");
+  await prepare("uni", zfo, amt);
   await ensureChain("base");
   await prepare("base", zfo, amt);
   const uniFrom = parseInt(await rpc("uni", "eth_blockNumber", []), 16);
