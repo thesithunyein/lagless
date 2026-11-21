@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import {ERC20} from "solmate/src/tokens/ERC20.sol";
+import {ERC20} from "@uniswap/v4-core/lib/solmate/src/tokens/ERC20.sol";
 
 /// @notice TESTNET ONLY. Open-mint ERC-20 used for the Lagless demo pools.
 /// @dev Deployed with CREATE2 from the same deployer + salt on Base Sepolia and Unichain Sepolia, so both
