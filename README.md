@@ -115,7 +115,7 @@ cast send 0x8888888888888888888888888888888888888888 "depositTo(address)" $REACT
 
 Note: depositing to the legacy service `0x…fffFfF` or calling `coverDebt()` (reactive-lib's default vendor) does **not** clear Omni-era debt.
 
-## Demo loop
+## Run a live round
 
 ```bash
 # Move the Base price (leading venue)
