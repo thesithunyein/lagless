@@ -353,7 +353,16 @@ async function ensureChain(c) {
   }
   if ((await eth.request({ method: "eth_chainId" })).toLowerCase() !== k.hex) throw new Error(`Switch your wallet to ${k.name} and try again.`);
   const acc = await eth.request({ method: "eth_accounts" }).catch(() => []);
-  if (!acc.length || acc[0].toLowerCase() !== user.toLowerCase()) { status("Allow this site on the new network in your wallet"); await eth.request({ method: "eth_requestAccounts" }); }
+  if (!acc.length || acc[0].toLowerCase() !== user.toLowerCase()) await allowNetwork(c);
+}
+
+// Newer MetaMask grants site access per network. wallet_requestPermissions always opens the connection
+// screen, where the user can tick the network (eth_requestAccounts returns silently and changes nothing).
+async function allowNetwork(c) {
+  status(`In your wallet, allow this site on ${CH[c].name}, then confirm`);
+  await eth.request({ method: "wallet_requestPermissions", params: [{ eth_accounts: {} }] });
+  const [a] = await eth.request({ method: "eth_accounts" });
+  if (a && a.toLowerCase() !== user.toLowerCase()) await setUser(a);
 }
 
 async function send(c, to, data, what) {
@@ -365,8 +374,7 @@ async function send(c, to, data, what) {
     catch (e) {
       // MetaMask scopes site access per network; after a network switch it can answer 4100 until access is granted there too.
       if ((e?.code ?? e?.data?.originalError?.code) !== 4100) throw e;
-      status("Allow this site on the new network in your wallet");
-      await eth.request({ method: "eth_requestAccounts" });
+      await allowNetwork(c);
       status(`Confirm in your wallet: ${what}`);
       hash = await eth.request({ method: "eth_sendTransaction", params: [{ from: user, to, data }] });
     }
@@ -383,7 +391,7 @@ async function send(c, to, data, what) {
 function niceErr(e) {
   const code = e?.code ?? e?.data?.originalError?.code;
   if (code === 4001) return "Cancelled in your wallet. Press the button to try again.";
-  if (code === 4100) return "Your wallet hasn't allowed this site on this network yet. Press the button again and approve the request.";
+  if (code === 4100) return "Your wallet hasn't allowed this site on this network. In MetaMask open Connected sites, pick this site, edit its networks and turn on Unichain Sepolia and Base Sepolia. Then press the button again.";
   if (code === -32002) return "Your wallet already has a request waiting. Click the wallet icon in your browser toolbar to open it.";
   const m = String(e?.message || e);
   if (/insufficient funds/i.test(m)) { $("faucet").hidden = false; return "Not enough test ETH for gas. Use the faucet links below."; }
