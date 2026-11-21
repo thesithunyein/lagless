@@ -286,10 +286,14 @@ document.querySelectorAll(".cp").forEach((b) => b.addEventListener("click", asyn
   if (await copyText(b.dataset.copy)) { b.textContent = "Copied"; b.classList.add("done"); setTimeout(() => { b.textContent = "Copy"; b.classList.remove("done"); }, 1500); }
 }));
 const links = [...document.querySelectorAll(".side a[href^='#']")];
-const io = new IntersectionObserver((es) => es.forEach((e) => {
-  if (e.isIntersecting) links.forEach((l) => l.classList.toggle("on", l.getAttribute("href") === "#" + e.target.id));
-}), { rootMargin: "-20% 0px -70% 0px" });
-document.querySelectorAll("article section").forEach((s) => io.observe(s));
+const secs = [...document.querySelectorAll("article section")];
+function spy() {
+  let cur = secs[0].id;
+  for (const s of secs) if (s.getBoundingClientRect().top < 140) cur = s.id;
+  if (innerHeight + scrollY >= document.body.scrollHeight - 4) cur = secs[secs.length - 1].id;
+  links.forEach((l) => l.classList.toggle("on", l.getAttribute("href") === "#" + cur));
+}
+addEventListener("scroll", spy, { passive: true }); spy();
 </script>
 </body>
 </html>
