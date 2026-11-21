@@ -110,6 +110,9 @@
   .amt input { width: 56px; border: 0; font: 500 15px var(--font); color: var(--ink); padding: 10px 0; outline: none; background: none; }
   .amt:focus-within { border-color: var(--blue); }
   .foot { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 13px; color: var(--faint); }
+  .who { display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .dc { font: 500 13px var(--font); color: var(--body); background: none; border: 1px solid var(--line); border-radius: 8px; padding: 4px 10px; cursor: pointer; }
+  .dc:hover { color: #B42318; border-color: #FDA29B; }
   .live { position: sticky; top: 92px; }
   .lv-head { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--body); }
   .lv-head img { width: 16px; height: 16px; }
@@ -184,7 +187,7 @@
       </details>
 
       <div class="foot">
-        <span id="who">Not connected</span>
+        <span class="who"><span id="who">Not connected</span><button type="button" class="dc" id="dc" hidden>Disconnect</button></span>
         <span class="faucet" id="faucet" hidden>Need test ETH? <a href="https://www.alchemy.com/faucets/base-sepolia" target="_blank" rel="noopener">Base</a> and <a href="https://docs.unichain.org/docs/tools/faucets" target="_blank" rel="noopener">Unichain</a> faucets</span>
       </div>
     </section>
@@ -300,7 +303,8 @@ document.querySelectorAll(".seg button").forEach((b) => b.addEventListener("clic
 
 async function setUser(a) {
   user = a || null;
-  if (!user) { $("who").textContent = "Not connected"; $("faucet").hidden = true; setStage(0); return; }
+  $("dc").hidden = !user;
+  if (!user) { $("who").textContent = "Not connected"; $("faucet").hidden = true; round = null; setStage(0); return; }
   $("error").hidden = true;
   $("who").textContent = `Connected ${short(user)}`;
   if (stage === 0) setStage(1);
@@ -496,6 +500,15 @@ $("go").addEventListener("click", async () => {
     else { $("result").hidden = true; $("txs").innerHTML = ""; tl("base", "–"); tl("shield", "–"); tl("trade", "–"); setStage(1); }
   } catch (e) { fail(e); }
   finally { busy = false; $("go").disabled = false; }
+});
+
+$("dc").addEventListener("click", async () => {
+  // Ask the wallet to drop this site's permission (MetaMask supports this); always forget it on our side.
+  try { await eth?.request({ method: "wallet_revokePermissions", params: [{ eth_accounts: {} }] }); } catch {}
+  store.set("lagless.wallet", "");
+  $("error").hidden = true; status(""); $("result").hidden = true; $("txs").innerHTML = "";
+  tl("base", "–"); tl("shield", "–"); tl("trade", "–");
+  setUser(null);
 });
 
 // ---------- live fee ----------
