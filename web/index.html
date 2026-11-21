@@ -101,7 +101,7 @@
   .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; margin-top: 48px; }
   .step { background: var(--white); padding: 30px 28px 32px; }
   .step .ic { width: 56px; height: 56px; border-radius: 14px; background: var(--mist); display: grid; place-items: center; }
-  .step .ic svg { width: 46px; height: 46px; overflow: visible; }
+  .step .ic svg { width: 32px; height: 32px; overflow: visible; }
   .step small { display: block; margin-top: 26px; font-size: 13px; color: var(--faint); }
   .step h3 { font-size: 20px; font-weight: 600; letter-spacing: -.02em; margin: 4px 0 8px; }
   .step p { margin: 0; color: var(--body); font-size: 15px; }
@@ -217,15 +217,16 @@
     @keyframes gap { 0%, 10% { opacity: 0; transform: scaleX(0); } 22%, 30% { opacity: 1; transform: scaleX(1); } 44%, 100% { opacity: 0; transform: scaleX(1); } }
     @keyframes gapTxt { 0%, 18% { opacity: 0; transform: translateY(6px); } 24%, 40% { opacity: 1; transform: none; } 48%, 100% { opacity: 0; } }
     @keyframes trail { 0%, 8% { opacity: 0; } 16%, 30% { opacity: .5; } 44%, 100% { opacity: 0; } }
-    .step .ic g, .step .ic path { transition: transform .6s var(--ease), opacity .4s var(--ease); transform-box: fill-box; }
-    .step .i-move { transform: translateX(-20px); }
-    .step:nth-child(2) .i-move { transform: translateX(-12px); }
-    .step .i-amb { transform: scaleX(0); opacity: 0; transform-origin: left center; }
-    .step .i-follow { transform: translateX(-12px); opacity: .35; }
-    .steps.in .i-move, .steps.in .i-follow, .step:hover .i-move, .step:hover .i-follow { transform: none; opacity: 1; }
-    .steps.in .i-amb, .step:hover .i-amb { transform: none; opacity: 1; }
-    .steps.in .step:nth-child(2) * { transition-delay: .35s; }
-    .steps.in .step:nth-child(3) * { transition-delay: .7s; }
+    .step .i-draw { stroke-dasharray: 60; stroke-dashoffset: 60; transition: stroke-dashoffset 1s var(--ease); }
+    .step .i-ring { transform-box: fill-box; transform-origin: center; }
+    .steps.in .i-ring { animation: ring 2.4s 1s var(--ease) infinite; }
+    @keyframes ring { 0% { transform: scale(.6); opacity: .6; } 70%, 100% { transform: scale(1.5); opacity: 0; } }
+    .step .i-amb { transform-box: fill-box; transform-origin: center; transform: scaleY(0); opacity: 0; transition: transform .6s var(--ease), opacity .3s; }
+    .step .i-up { transform: translateY(8px); opacity: 0; transition: transform .6s var(--ease), opacity .3s; }
+    .steps.in .i-draw { stroke-dashoffset: 0; }
+    .steps.in .i-amb, .steps.in .i-up { transform: none; opacity: 1; }
+    .steps.in .step:nth-child(2) .i-amb { transition-delay: .4s; }
+    .steps.in .step:nth-child(3) .i-up { transition-delay: .8s; }
     .reveal { opacity: 0; transform: translateY(14px); transition: opacity .7s var(--ease), transform .7s var(--ease); }
     .reveal.in { opacity: 1; transform: none; }
   }
@@ -299,15 +300,20 @@
       <p class="sub">Three contracts on three chains. Nothing off-chain to keep alive.</p>
       <div class="steps">
         <div class="step">
-          <div class="ic"><svg viewBox="4 4 40 40" aria-hidden="true"><g class="i-ghost"><path d="M9 19H21L17 29H5Z" fill="none" stroke="#99A1AF" stroke-width="1.4" stroke-dasharray="2.4 2.2" stroke-linejoin="round"/></g><g class="i-move"><path d="M29 19H41L37 29H25Z" fill="#101828" /></g></svg></div>
+          <div class="ic"><svg viewBox="0 0 48 48" aria-hidden="true"><path class="i-draw" d="M6 33H19L25 15H42" fill="none" stroke="#101828" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<circle class="i-ring" cx="25" cy="15" r="7" fill="none" stroke="#3D4FF2" stroke-width="2" opacity=".35"/>
+<circle cx="25" cy="15" r="3.5" fill="#3D4FF2"/></svg></div>
           <small>Step 1</small><h3>Watch</h3><p>A Reactive contract reads every swap on Base.</p>
         </div>
         <div class="step">
-          <div class="ic"><svg viewBox="4 4 40 40" aria-hidden="true"><g class="i-move"><path d="M28 9H40L36 19H24Z" fill="#101828" /></g><path d="M12 21H24L20 31H8Z" fill="#3D4FF2" /><g class="i-amb"><path d="M21 37H35" stroke="#F5A524" stroke-width="2.4" stroke-linecap="round"/><path d="M21 34v6M35 34v6" stroke="#F5A524" stroke-width="1.6" stroke-linecap="round"/></g></svg></div>
+          <div class="ic"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M6 13H42" stroke="#101828" stroke-width="3" stroke-linecap="round"/>
+<path d="M6 35H42" stroke="#3D4FF2" stroke-width="3" stroke-linecap="round"/>
+<g class="i-amb"><path d="M24 18.5V29.5" stroke="#F5A524" stroke-width="2.6" stroke-linecap="round"/><path d="M20 18.5H28M20 29.5H28" stroke="#F5A524" stroke-width="2.6" stroke-linecap="round"/></g></svg></div>
           <small>Step 2</small><h3>Decide</h3><p>It measures the price gap and sets a fee to match.</p>
         </div>
         <div class="step">
-          <div class="ic"><svg viewBox="4 4 40 40" aria-hidden="true"><g transform="translate(3 1)"><path d="M14 10H26L22 20H10Z" fill="#101828" /><g class="i-follow"><path d="M20 20H32L28 30H16Z" fill="#3D4FF2" /></g><path class="i-amb" d="M16 33.5H28L27.2 36.1H15.2Z" fill="#F5A524"/></g></svg></div>
+          <div class="ic"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 5L39 10.5V22.5C39 32 32.5 39.5 24 43C15.5 39.5 9 32 9 22.5V10.5Z" fill="#EEF0FE" stroke="#3D4FF2" stroke-width="2.6" stroke-linejoin="round"/>
+<g class="i-up"><path d="M24 31V17" stroke="#F5A524" stroke-width="3" stroke-linecap="round"/><path d="M18.5 22.5L24 17L29.5 22.5" fill="none" stroke="#F5A524" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></g></svg></div>
           <small>Step 3</small><h3>Protect</h3><p>Your Unichain pool charges more until prices match.</p>
         </div>
       </div>
