@@ -14,6 +14,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+
   :root {
     --white: #FFFFFF;
     --mist: #F5F6F9;
@@ -60,69 +61,71 @@
 
 
   .links a.cur { color: var(--ink); font-weight: 500; }
-  .app { padding: 40px 24px 96px; }
-  .crumb { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--body); }
-  .intro h1 { font-size: clamp(36px, 4.6vw, 52px); letter-spacing: -.04em; font-weight: 600; line-height: 1.04; margin: 14px 0 0; }
-  .lede { font-size: 18px; color: var(--body); max-width: 36em; margin: 14px 0 0; }
-  .layout { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: 20px; margin-top: 36px; align-items: start; }
-  .flow { display: grid; gap: 14px; }
-  .card { border: 1px solid var(--line); border-radius: 18px; background: var(--white); padding: 24px; }
-  h3 { font-size: 17px; font-weight: 600; letter-spacing: -.015em; margin: 0; }
-  .muted { color: var(--body); font-size: 15px; margin: 6px 0 0; }
-  .hint { font-size: 13.5px; color: var(--faint); margin: 16px 0 0; padding-top: 14px; border-top: 1px solid var(--line); }
-  .hint a, .fine a, .log a, .result a { color: var(--blue); text-decoration: none; }
-  .hint a:hover, .fine a:hover, .log a:hover, .result a:hover { text-decoration: underline; }
-  .wallet .row { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
-  .wallet .btn { white-space: nowrap; flex: none; }
-  .wallet.ok .btn { background: var(--white); color: var(--ink); border-color: var(--line); }
-  .step { display: grid; grid-template-columns: 32px 1fr; gap: 16px; }
-  .step.dim { opacity: .55; }
-  .num { width: 32px; height: 32px; border-radius: 50%; background: var(--blue-soft); color: var(--blue); display: grid; place-items: center; font-weight: 600; font-size: 14px; }
-  .step.done .num { background: #ECFDF3; color: #079455; }
-  .controls { display: flex; gap: 10px; margin: 18px 0 14px; flex-wrap: wrap; }
-  .seg { display: inline-flex; background: var(--mist); border-radius: 10px; padding: 3px; }
-  .seg button { font: 500 14px/1 var(--font); border: 0; background: none; color: var(--body); padding: 10px 14px; border-radius: 8px; cursor: pointer; }
-  .seg button.on { background: var(--white); color: var(--ink); box-shadow: 0 1px 2px rgba(16,24,40,.08); }
-  .amt { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 10px; padding: 0 12px; font-size: 14px; color: var(--faint); }
-  .amt input { width: 64px; border: 0; font: 500 15px var(--font); color: var(--ink); padding: 10px 0; outline: none; background: none; }
-  .amt:focus-within { border-color: var(--blue); }
-  .btn.wide { width: 100%; height: 46px; font-size: 15px; }
-  .btn:disabled { opacity: .45; cursor: not-allowed; }
-  .log { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 8px; font-size: 14px; }
-  .log li { display: flex; gap: 10px; align-items: center; color: var(--body); }
-  .log li::before { content: ""; width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line); border-top-color: var(--blue); flex: none; animation: spin .8s linear infinite; }
-  .log li.ok::before { animation: none; border: 0; background: #12B76A url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5l2.5 2.5L12 5.5' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/12px no-repeat; }
-  .log li.err { color: #B42318; }
-  .log li.err::before { animation: none; border: 0; background: #F04438; }
-  .log li a { margin-left: auto; }
+  .app { padding: 48px 24px 96px; }
+  .intro h1 { font-size: clamp(36px, 4.6vw, 52px); letter-spacing: -.04em; font-weight: 600; line-height: 1.04; margin: 0; }
+  .lede { font-size: 18px; color: var(--body); margin: 12px 0 0; }
+  .layout { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); gap: 20px; margin-top: 36px; align-items: start; }
+  .card { border: 1px solid var(--line); border-radius: 20px; background: var(--white); padding: 28px; }
+  .steps { list-style: none; margin: 0 0 28px; padding: 0; display: flex; gap: 8px; flex-wrap: wrap; font-size: 13.5px; color: var(--faint); }
+  .steps li { display: flex; align-items: center; gap: 8px; padding: 6px 12px 6px 6px; border-radius: 999px; background: var(--mist); }
+  .steps li i { font-style: normal; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 600; background: var(--white); color: var(--faint); }
+  .steps li.now { background: var(--blue-soft); color: var(--ink); }
+  .steps li.now i { background: var(--blue); color: var(--white); }
+  .steps li.done { color: var(--body); }
+  .steps li.done i { background: #12B76A; color: var(--white); font-size: 0; }
+  .steps li.done i::after { content: ""; width: 9px; height: 5px; border: solid #fff; border-width: 0 0 2px 2px; transform: translateY(-1px) rotate(-45deg); }
+  h2 { font-size: 26px; letter-spacing: -.03em; font-weight: 600; margin: 0; }
+  .desc { color: var(--body); margin: 8px 0 0; font-size: 16px; }
+  .go { width: 100%; height: 52px; font-size: 16px; margin-top: 24px; border-radius: 12px; }
+  .go:disabled { opacity: .55; cursor: progress; }
+  .status { display: flex; align-items: center; gap: 10px; margin: 14px 0 0; font-size: 14.5px; color: var(--body); }
+  .spin { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line); border-top-color: var(--blue); animation: spin .8s linear infinite; flex: none; }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .result { margin-top: 16px; border-radius: 14px; padding: 16px 18px; background: var(--mist); font-size: 15px; color: var(--body); }
+  .error { margin: 14px 0 0; padding: 12px 14px; border-radius: 12px; background: #FEF3F2; color: #B42318; font-size: 14.5px; }
+  .result { margin-top: 18px; border-radius: 14px; padding: 18px; background: var(--mist); color: var(--body); font-size: 15.5px; }
   .result b { color: var(--ink); }
   .result.win { background: var(--amber-soft); color: var(--amber-ink); }
   .result.win b { color: #6B4500; }
+  .result .num { display: block; font-size: 34px; font-weight: 600; letter-spacing: -.03em; color: #B76E00; margin-bottom: 4px; }
+  .txs { list-style: none; margin: 18px 0 0; padding: 0; display: grid; gap: 2px; font-size: 13.5px; }
+  .txs:empty { display: none; }
+  .txs li { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-top: 1px solid var(--line); color: var(--body); }
+  .txs a, .foot a, .tl a { color: var(--blue); text-decoration: none; }
+  .txs a:hover, .foot a:hover, .tl a:hover { text-decoration: underline; }
+  .opts { margin-top: 18px; font-size: 14px; }
+  .opts summary { cursor: pointer; color: var(--body); list-style: none; display: inline-flex; align-items: center; gap: 6px; }
+  .opts summary::-webkit-details-marker { display: none; }
+  .opts summary::after { content: ""; width: 6px; height: 6px; border: solid var(--faint); border-width: 0 1.5px 1.5px 0; transform: rotate(45deg) translateY(-2px); transition: transform .2s; }
+  .opts[open] summary::after { transform: rotate(-135deg); }
+  .optrow { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+  .seg { display: inline-flex; background: var(--mist); border-radius: 10px; padding: 3px; }
+  .seg button { font: 500 14px/1 var(--font); border: 0; background: none; color: var(--body); padding: 10px 14px; border-radius: 8px; cursor: pointer; }
+  .seg button.on { background: var(--white); color: var(--ink); box-shadow: 0 1px 2px rgba(16,24,40,.08); }
+  .amt { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 10px; padding: 0 12px; color: var(--faint); }
+  .amt input { width: 56px; border: 0; font: 500 15px var(--font); color: var(--ink); padding: 10px 0; outline: none; background: none; }
+  .amt:focus-within { border-color: var(--blue); }
+  .foot { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 13px; color: var(--faint); }
   .live { position: sticky; top: 92px; }
   .lv-head { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--body); }
   .lv-head img { width: 16px; height: 16px; }
-  .big { font-size: 64px; font-weight: 600; letter-spacing: -.045em; line-height: 1; margin: 18px 0 10px; font-variant-numeric: tabular-nums; transition: color .3s; }
+  .big { font-size: 64px; font-weight: 600; letter-spacing: -.045em; line-height: 1; margin: 18px 0 12px; font-variant-numeric: tabular-nums; transition: color .3s; }
   .live.on .big { color: #B76E00; }
   .state { display: inline-flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--body); background: var(--mist); border-radius: 999px; padding: 6px 12px 6px 10px; }
   .state i { width: 7px; height: 7px; border-radius: 50%; background: #12B76A; }
   .live.on .state { background: var(--amber-soft); color: var(--amber-ink); }
   .live.on .state i { background: var(--amber); }
-  .meter { height: 6px; background: var(--mist); border-radius: 3px; margin: 18px 0 6px; overflow: hidden; }
+  .meter { height: 6px; background: var(--mist); border-radius: 3px; margin: 18px 0 0; overflow: hidden; }
   .meter div { height: 100%; width: 0; background: var(--amber); transition: width 1s linear; }
-  .tl { list-style: none; margin: 18px 0 0; padding: 0; display: grid; gap: 0; }
+  .tl { list-style: none; margin: 22px 0 0; padding: 0; }
   .tl li { position: relative; padding: 0 0 18px 26px; font-size: 14px; display: flex; flex-direction: column; gap: 2px; }
+  .tl li:last-child { padding-bottom: 0; }
   .tl li::before { content: ""; position: absolute; left: 0; top: 4px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--line); background: var(--white); }
   .tl li:not(:last-child)::after { content: ""; position: absolute; left: 6px; top: 20px; bottom: 2px; width: 2px; background: var(--line); }
   .tl li.ok::before { border-color: var(--blue); background: var(--blue); }
   .tl li b { font-weight: 500; color: var(--ink); }
   .tl li span { color: var(--faint); }
-  .tl li span a { color: var(--blue); text-decoration: none; }
-  .fine { font-size: 12.5px; color: var(--faint); margin: 6px 0 0; }
-  @media (max-width: 920px) { .layout { grid-template-columns: 1fr; } .live { position: static; order: -1; } .links .opt { display: none; } .links .opt.cur { display: inline; } }
-  @media (prefers-reduced-motion: reduce) { .log li::before { animation: none; } }
-
+  @media (max-width: 920px) { .layout { grid-template-columns: 1fr; } .live { position: static; order: -1; } .big { font-size: 52px; } .links .opt { display: none; } .links .opt.cur { display: inline; } }
+  @media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
 </style>
 </head>
 <body>
@@ -140,66 +143,61 @@
 </nav>
 <main class="wrap app">
   <header class="intro">
-    <div class="crumb"><span class="pair-mark" aria-hidden="true"></span>Try it</div>
-    <h1>Run the loop yourself</h1>
-    <p class="lede">Move the price on Base. Watch the Unichain fee rise about two seconds later. Then trade on Unichain and see who earns.</p>
+    <h1>Try Lagless</h1>
+    <p class="lede">Move a price on Base. Watch the Unichain fee rise. Then trade and see who earns.</p>
   </header>
 
   <div class="layout">
-    <section class="flow" aria-label="Steps">
-      <div class="card wallet">
-        <div class="row">
-          <div><h3>Wallet</h3><p class="muted" id="w-status">Connect a wallet with a little test ETH on Base Sepolia and Unichain Sepolia.</p></div>
-          <button class="btn dark" id="connect">Connect wallet</button>
-        </div>
-        <p class="hint">Need test ETH? <a href="https://www.alchemy.com/faucets/base-sepolia" target="_blank" rel="noopener">Base Sepolia faucet</a> and <a href="https://docs.unichain.org/docs/tools/faucets" target="_blank" rel="noopener">Unichain Sepolia faucets</a>. The pool tokens are free; this page mints them for you.</p>
-      </div>
+    <section class="card main" aria-label="Try it">
+      <ol class="steps" aria-label="Progress">
+        <li data-s="0"><i>1</i>Connect</li>
+        <li data-s="1"><i>2</i>Move price on Base</li>
+        <li data-s="2"><i>3</i>Trade on Unichain</li>
+      </ol>
 
-      <div class="card step" id="s1">
-        <div class="num">1</div>
-        <div class="body">
-          <h3>Move the price on Base</h3>
-          <p class="muted">Swap on the Base pool. This is the price move other chains react to.</p>
-          <div class="controls">
-            <div class="seg" role="radiogroup" aria-label="Direction">
-              <button role="radio" aria-checked="true" data-zfo="1" class="on">Buy lWETH</button>
-              <button role="radio" aria-checked="false" data-zfo="0">Sell lWETH</button>
-            </div>
-            <label class="amt"><input id="amt" type="number" min="1" max="50" step="1" value="20" inputmode="numeric"><span>tokens</span></label>
+      <h2 id="title">Connect your wallet</h2>
+      <p class="desc" id="desc">You need a little test ETH on Base Sepolia and Unichain Sepolia. Pool tokens are free.</p>
+
+      <button class="btn dark go" id="go">Connect wallet</button>
+      <p class="status" id="status" hidden><span class="spin"></span><span id="status-t"></span></p>
+      <p class="error" id="error" hidden></p>
+
+      <div class="result" id="result" hidden></div>
+
+      <ul class="txs" id="txs"></ul>
+
+      <details class="opts" id="opts" hidden>
+        <summary>Trade settings</summary>
+        <div class="optrow">
+          <div class="seg" role="radiogroup" aria-label="Direction">
+            <button type="button" role="radio" aria-checked="true" data-zfo="1" class="on">Buy lWETH</button>
+            <button type="button" role="radio" aria-checked="false" data-zfo="0">Sell lWETH</button>
           </div>
-          <button class="btn dark wide" id="go1" disabled>Swap on Base</button>
-          <ol class="log" id="log1"></ol>
+          <label class="amt"><input id="amt" type="number" min="1" max="50" step="1" value="20" inputmode="numeric" aria-label="Amount"><span>tokens</span></label>
         </div>
-      </div>
+      </details>
 
-      <div class="card step" id="s2">
-        <div class="num">2</div>
-        <div class="body">
-          <h3>Trade on Unichain</h3>
-          <p class="muted">Make the same trade on the Lagless pool, like an arbitrage bot would. The higher fee lasts about 10 seconds, so be quick.</p>
-          <button class="btn dark wide" id="go2" disabled>Swap on Unichain</button>
-          <ol class="log" id="log2"></ol>
-          <div class="result" id="result" hidden></div>
-        </div>
+      <div class="foot">
+        <span id="who">Not connected</span>
+        <span class="faucet" id="faucet" hidden>Need test ETH? <a href="https://www.alchemy.com/faucets/base-sepolia" target="_blank" rel="noopener">Base</a> and <a href="https://docs.unichain.org/docs/tools/faucets" target="_blank" rel="noopener">Unichain</a> faucets</span>
       </div>
     </section>
 
-    <aside class="live card" aria-live="polite">
-      <div class="lv-head"><img src="/logos/unichain-star.svg" alt=""><span>Lagless pool fee on Unichain</span></div>
+    <aside class="card live" aria-live="polite">
+      <div class="lv-head"><img src="/logos/unichain-star.svg" alt=""><span>Unichain pool fee, live</span></div>
       <div class="big" id="fee">…</div>
       <div class="state" id="state"><i></i><span>Normal fee</span></div>
-      <div class="meter"><div id="meter"></div></div>
+      <div class="meter" aria-hidden="true"><div id="meter"></div></div>
       <ol class="tl" id="tl">
-        <li data-k="base"><b>Base swap confirmed</b><span>Waiting for step 1</span></li>
-        <li data-k="shield"><b>Reactive raised the fee</b><span>–</span></li>
-        <li data-k="trade"><b>Your Unichain trade</b><span>–</span></li>
+        <li data-k="base"><b>Price moves on Base</b><span>–</span></li>
+        <li data-k="shield"><b>Fee rises on Unichain</b><span>–</span></li>
+        <li data-k="trade"><b>Your trade pays</b><span>–</span></li>
       </ol>
-      <p class="fine">Read live from Unichain Sepolia every second. Reactive contract <a href="https://lasna.reactscan.net/address/0x1eee3853d5C0dEB9702eC4e7EEd205ff58d878e5" target="_blank" rel="noopener">0x1eee…78e5</a></p>
     </aside>
   </div>
 </main>
-
 <script>
+
 const ZERO = "0x0000000000000000000000000000000000000000";
 const TOK = { t0: "0x41eFe7a3A065a5094Eb88c9F486238Fc227E7893", t1: "0x9063cE4EBFBA81206E621158B7586024eeC6d0B3" }; // t0 = lUSDC, t1 = lWETH
 const HOOK = "0x03A696938EF795a0B1496FC407CF7B53F4702080";
@@ -250,26 +248,50 @@ function swapData(c, zfo, amt) {
 
 // ---------- wallet ----------
 const eth = window.ethereum;
-let user = null;
+let user = null, stage = 0, zfo = true, round = null, busy = false;
 
-async function connect() {
-  if (!eth) { $("w-status").textContent = "No wallet found. Install MetaMask, Rabby or Coinbase Wallet, then reload this page."; return; }
-  try {
-    const [a] = await eth.request({ method: "eth_requestAccounts" });
-    setUser(a);
-  } catch (e) { $("w-status").textContent = niceErr(e); }
+const COPY = [
+  { t: "Connect your wallet", d: "You need a little test ETH on Base Sepolia and Unichain Sepolia. Pool tokens are free.", b: "Connect wallet" },
+  { t: "Move the price on Base", d: "Swap on the Base pool. Lagless sees it and raises the Unichain fee about two seconds later.", b: "Swap on Base" },
+  { t: "Trade on Unichain", d: "Make the same trade on the Lagless pool, like an arbitrage bot. The higher fee lasts about 10 seconds.", b: "Swap on Unichain" },
+  { t: "Done", d: "That was the full loop: Base, Reactive, Unichain. Run it again in the other direction.", b: "Run again" },
+];
+function setStage(n) {
+  stage = n;
+  const c = COPY[n];
+  $("title").textContent = c.t; $("desc").textContent = c.d; $("go").textContent = c.b;
+  document.querySelectorAll(".steps li").forEach((li) => {
+    const s = Number(li.dataset.s);
+    li.classList.toggle("now", s === Math.min(n, 2) && n < 3);
+    li.classList.toggle("done", s < n);
+  });
+  $("opts").hidden = n !== 1;
 }
+function status(t) { $("status").hidden = !t; $("status-t").textContent = t || ""; }
+function fail(e) { status(""); $("error").hidden = false; $("error").textContent = niceErr(e); }
+function txLine(label, c, hash) {
+  const li = document.createElement("li");
+  li.innerHTML = `<span></span><a target="_blank" rel="noopener">View</a>`;
+  li.firstChild.textContent = label;
+  li.lastChild.href = `${CH[c].scan}/tx/${hash}`;
+  $("txs").appendChild(li);
+}
+function setDir(z) {
+  zfo = z;
+  document.querySelectorAll(".seg button").forEach((x) => { const on = (x.dataset.zfo === "1") === z; x.classList.toggle("on", on); x.setAttribute("aria-checked", on); });
+}
+document.querySelectorAll(".seg button").forEach((b) => b.addEventListener("click", () => setDir(b.dataset.zfo === "1")));
+
 async function setUser(a) {
   user = a || null;
-  document.querySelector(".wallet").classList.toggle("ok", !!user);
-  $("connect").textContent = user ? short(user) : "Connect wallet";
-  $("go1").disabled = !user;
-  if (!user) { $("w-status").textContent = "Connect a wallet with a little test ETH on Base Sepolia and Unichain Sepolia."; return; }
-  $("w-status").textContent = "Connected. Checking balances…";
+  if (!user) { $("who").textContent = "Not connected"; $("faucet").hidden = true; setStage(0); return; }
+  $("who").textContent = `Connected ${short(user)}`;
+  if (stage === 0) setStage(1);
   try {
     const [b, u] = await Promise.all([rpc("base", "eth_getBalance", [user, "latest"]), rpc("uni", "eth_getBalance", [user, "latest"])]);
-    $("w-status").textContent = `Base Sepolia: ${fmt(BigInt(b))} ETH. Unichain Sepolia: ${fmt(BigInt(u))} ETH.`;
-  } catch { $("w-status").textContent = "Connected."; }
+    $("who").textContent = `${short(user)}. Base ${fmt(BigInt(b), 3)} ETH, Unichain ${fmt(BigInt(u), 3)} ETH`;
+    $("faucet").hidden = BigInt(b) > 10n ** 15n && BigInt(u) > 10n ** 15n;
+  } catch {}
 }
 if (eth) {
   eth.on?.("accountsChanged", (a) => setUser(a[0]));
@@ -279,6 +301,7 @@ if (eth) {
 async function ensureChain(c) {
   const k = CH[c];
   if ((await eth.request({ method: "eth_chainId" })).toLowerCase() === k.hex) return;
+  status(`Switch your wallet to ${k.name}`);
   try {
     await eth.request({ method: "wallet_switchEthereumChain", params: [{ chainId: k.hex }] });
   } catch (e) {
@@ -289,8 +312,10 @@ async function ensureChain(c) {
   if ((await eth.request({ method: "eth_chainId" })).toLowerCase() !== k.hex) throw new Error(`Switch your wallet to ${k.name} and try again.`);
 }
 
-async function send(c, to, data) {
+async function send(c, to, data, what) {
+  status(`Confirm in your wallet: ${what}`);
   const hash = await eth.request({ method: "eth_sendTransaction", params: [{ from: user, to, data }] });
+  status(`${what}…`);
   for (let i = 0; i < 240; i++) {
     const r = await rpc(c, "eth_getTransactionReceipt", [hash]).catch(() => null);
     if (r) { if (r.status !== "0x1") throw new Error("The transaction failed on-chain."); return r; }
@@ -301,85 +326,65 @@ async function send(c, to, data) {
 
 function niceErr(e) {
   const code = e?.code ?? e?.data?.originalError?.code;
-  if (code === 4001) return "Cancelled in your wallet.";
+  if (code === 4001) return "Cancelled in your wallet. Press the button to try again.";
   const m = String(e?.message || e);
-  if (/insufficient funds/i.test(m)) return "Not enough test ETH for gas. Use the faucet links above.";
-  return m.length > 140 ? m.slice(0, 140) + "…" : m;
+  if (/insufficient funds/i.test(m)) { $("faucet").hidden = false; return "Not enough test ETH for gas. Use the faucet links below."; }
+  return m.length > 160 ? m.slice(0, 160) + "…" : m;
 }
 
-function logLine(list, text) {
-  const li = document.createElement("li");
-  li.textContent = text;
-  $(list).appendChild(li);
-  return {
-    ok(t, href) { li.className = "ok"; if (t) li.textContent = t; if (href) { const a = document.createElement("a"); a.href = href; a.target = "_blank"; a.rel = "noopener"; a.textContent = "View"; li.appendChild(a); } },
-    err(t) { li.className = "err"; li.textContent = t; },
-  };
-}
-
-async function prepare(c, zfo, amt, list) {
-  const k = CH[c], token = zfo ? TOK.t0 : TOK.t1;
+async function prepare(c, z, amt) {
+  const k = CH[c], token = z ? TOK.t0 : TOK.t1;
+  status(`Checking your ${k.name} balance`);
   const gas = BigInt(await rpc(c, "eth_getBalance", [user, "latest"]));
-  if (gas === 0n) throw new Error(`You need a little test ETH on ${k.name} for gas. Use the faucet links above.`);
+  if (gas === 0n) { $("faucet").hidden = false; throw new Error(`You need a little test ETH on ${k.name} for gas. Use the faucet links below.`); }
   const bal = BigInt(await call(c, token, "0x70a08231" + enc.addr(user)));
   if (bal < amt) {
-    const l = logLine(list, `Minting 100 test ${symIn(zfo)} on ${k.name}`);
-    const mintAmt = amt > 100n * E18 ? amt : 100n * E18;
-    const r = await send(c, token, "0x40c10f19" + enc.addr(user) + enc.uint(mintAmt));
-    l.ok(`Minted 100 test ${symIn(zfo)}`, `${k.scan}/tx/${r.transactionHash}`);
+    const r = await send(c, token, "0x40c10f19" + enc.addr(user) + enc.uint(amt > 100n * E18 ? amt : 100n * E18), `get free test ${symIn(z)}`);
+    txLine(`Got free test ${symIn(z)} on ${k.name}`, c, r.transactionHash);
   }
   const allowance = BigInt(await call(c, token, "0xdd62ed3e" + enc.addr(user) + enc.addr(k.router)));
   if (allowance < amt) {
-    const l = logLine(list, `Allowing the Uniswap router to use your ${symIn(zfo)}`);
-    const r = await send(c, token, "0x095ea7b3" + enc.addr(k.router) + enc.uint(MAXU));
-    l.ok(`Router allowed to use ${symIn(zfo)}`, `${k.scan}/tx/${r.transactionHash}`);
+    const r = await send(c, token, "0x095ea7b3" + enc.addr(k.router) + enc.uint(MAXU), `allow trading ${symIn(z)}`);
+    txLine(`Allowed trading ${symIn(z)} on ${k.name}`, c, r.transactionHash);
   }
 }
 
-// ---------- timeline ----------
-function tl(k, text, href) {
+function tl(k, text, c, hash) {
   const li = document.querySelector(`#tl li[data-k="${k}"]`);
-  li.classList.toggle("ok", !!href);
+  li.classList.toggle("ok", !!hash);
   const s = li.querySelector("span");
   s.textContent = text;
-  if (href) { s.append(" "); const a = document.createElement("a"); a.href = href; a.target = "_blank"; a.rel = "noopener"; a.textContent = "View"; s.appendChild(a); }
+  if (hash) { s.append(" "); const a = document.createElement("a"); a.href = `${CH[c].scan}/tx/${hash}`; a.target = "_blank"; a.rel = "noopener"; a.textContent = "View"; s.appendChild(a); }
 }
 
-// ---------- step 1 ----------
-let zfo = true, round = null;
-document.querySelectorAll(".seg button").forEach((b) => b.addEventListener("click", () => {
-  document.querySelectorAll(".seg button").forEach((x) => { x.classList.toggle("on", x === b); x.setAttribute("aria-checked", x === b); });
-  zfo = b.dataset.zfo === "1";
-}));
+// ---------- actions ----------
+async function doConnect() {
+  if (!eth) throw new Error("No wallet found. Install MetaMask, Rabby or Coinbase Wallet, then reload this page.");
+  status("Approve the connection in your wallet");
+  const [a] = await eth.request({ method: "eth_requestAccounts" });
+  status(""); await setUser(a);
+}
 
-$("go1").addEventListener("click", async () => {
+async function doBase() {
   const n = Math.round(Number($("amt").value));
-  if (!(n >= 1 && n <= 50)) { $("amt").focus(); return; }
+  if (!(n >= 1 && n <= 50)) { $("opts").open = true; $("amt").focus(); throw new Error("Pick an amount from 1 to 50."); }
   const amt = BigInt(n) * E18;
-  $("go1").disabled = true; $("go2").disabled = true; $("log1").innerHTML = ""; $("log2").innerHTML = ""; $("result").hidden = true;
-  $("s1").classList.remove("done"); $("s2").classList.remove("done");
-  tl("base", "Waiting for your swap"); tl("shield", "–"); tl("trade", "–");
-  try {
-    const sw = logLine("log1", "Switching to Base Sepolia");
-    await ensureChain("base"); sw.ok("On Base Sepolia");
-    await prepare("base", zfo, amt, "log1");
-    const uniFrom = parseInt(await rpc("uni", "eth_blockNumber", []), 16);
-    const l = logLine("log1", `Swapping ${n} ${symIn(zfo)} on Base`);
-    const r = await send("base", CH.base.router, swapData("base", zfo, amt));
-    const ev = r.logs.find((x) => x.topics[0] === T.swap && x.address.toLowerCase() === CH.base.pm.toLowerCase());
-    const sqrt = word(ev.data, 2), t0 = await blockTs("base", r.blockNumber);
-    l.ok(`Swapped ${n} ${symIn(zfo)} on Base`, `${CH.base.scan}/tx/${r.transactionHash}`);
-    tl("base", "Price moved on Base", `${CH.base.scan}/tx/${r.transactionHash}`);
-    $("s1").classList.add("done");
-    round = { zfo, amt, n, sqrt, t0 };
-    $("go2").disabled = false;
-    tl("shield", "Watching Unichain…");
-    watchShield(uniFrom, sqrt, t0);
-  } catch (e) {
-    logLine("log1", "").err(niceErr(e));
-    tl("base", "Waiting for step 1");
-  } finally { $("go1").disabled = !user; }
-});
+  $("result").hidden = true; $("txs").innerHTML = "";
+  tl("base", "–"); tl("shield", "–"); tl("trade", "–");
+  await ensureChain("base");
+  await prepare("base", zfo, amt);
+  const uniFrom = parseInt(await rpc("uni", "eth_blockNumber", []), 16);
+  const r = await send("base", CH.base.router, swapData("base", zfo, amt), `swap ${n} ${symIn(zfo)} on Base`);
+  const ev = r.logs.find((x) => x.topics[0] === T.swap && x.address.toLowerCase() === CH.base.pm.toLowerCase());
+  const sqrt = word(ev.data, 2), t0 = await blockTs("base", r.blockNumber);
+  txLine(`Swapped ${n} ${symIn(zfo)} on Base`, "base", r.transactionHash);
+  tl("base", "Done", "base", r.transactionHash);
+  tl("shield", "Watching Unichain…");
+  round = { zfo, amt, n };
+  status("");
+  setStage(2);
+  watchShield(uniFrom, sqrt, t0);
+}
 
 async function watchShield(from, sqrt, t0) {
   const until = Date.now() + 60000;
@@ -390,46 +395,50 @@ async function watchShield(from, sqrt, t0) {
       const hit = ls.find((x) => word(x.data, 2) === sqrt);
       if (hit) {
         const t1 = await blockTs("uni", hit.blockNumber);
-        tl("shield", `Fee raised to ${pct(word(hit.data, 0))}, ${Math.max(0, t1 - t0)} s after your swap`, `${CH.uni.scan}/tx/${hit.transactionHash}`);
+        tl("shield", `To ${pct(word(hit.data, 0))}, ${Math.max(0, t1 - t0)} s later`, "uni", hit.transactionHash);
         return;
       }
     } catch {}
     await sleep(700);
   }
-  tl("shield", "No fee change within 60 s. The move may be under 0.20%, or the prices were already apart.");
+  tl("shield", "No change. The move was too small or prices were already apart.");
 }
 
-// ---------- step 2 ----------
-$("go2").addEventListener("click", async () => {
-  if (!round) return;
-  $("go2").disabled = true; $("log2").innerHTML = ""; $("result").hidden = true;
+async function doUni() {
   const { zfo: z, amt, n } = round;
-  try {
-    const sw = logLine("log2", "Switching to Unichain Sepolia");
-    await ensureChain("uni"); sw.ok("On Unichain Sepolia");
-    await prepare("uni", z, amt, "log2");
-    const l = logLine("log2", `Swapping ${n} ${symIn(z)} on the Lagless pool`);
-    const r = await send("uni", CH.uni.router, swapData("uni", z, amt));
-    const ev = r.logs.find((x) => x.topics[0] === T.swap && x.topics[1].toLowerCase() === LAG_POOL);
-    const fee = word(ev.data, 5), a0 = signed(word(ev.data, 0)), a1 = signed(word(ev.data, 1));
-    const paidIn = z ? -a0 : -a1, lp = paidIn * fee / 1000000n, normal = paidIn * 3000n / 1000000n;
-    l.ok(`Swapped on the Lagless pool, fee ${pct(fee)}`, `${CH.uni.scan}/tx/${r.transactionHash}`);
-    tl("trade", `You paid ${pct(fee)}`, `${CH.uni.scan}/tx/${r.transactionHash}`);
-    $("s2").classList.add("done");
-    const res = $("result"); res.hidden = false; res.textContent = "";
-    if (fee > 3000n) {
-      res.className = "result win";
-      const up = Math.round(100 * (Number(lp) / Number(normal) - 1));
-      res.innerHTML = `You paid <b>${pct(fee)}</b>. LPs earned <b>${fmt(lp)} ${symIn(z)}</b> from your trade. A normal 0.30% pool would have paid them ${fmt(normal)}. That's <b>+${up}%</b> for LPs.`;
-    } else {
-      res.className = "result";
-      res.innerHTML = `You paid the normal <b>0.30%</b>. The higher fee lasts about 10 seconds, and it had ended or not yet started when your trade landed. Run step 1 again and trade faster to see it.`;
-    }
-    round = null;
-  } catch (e) {
-    logLine("log2", "").err(niceErr(e));
-    $("go2").disabled = false;
+  await ensureChain("uni");
+  await prepare("uni", z, amt);
+  const r = await send("uni", CH.uni.router, swapData("uni", z, amt), `swap ${n} ${symIn(z)} on Unichain`);
+  const ev = r.logs.find((x) => x.topics[0] === T.swap && x.topics[1].toLowerCase() === LAG_POOL);
+  const fee = word(ev.data, 5), a0 = signed(word(ev.data, 0)), a1 = signed(word(ev.data, 1));
+  const paidIn = z ? -a0 : -a1, lp = paidIn * fee / 1000000n, normal = paidIn * 3000n / 1000000n;
+  txLine(`Swapped ${n} ${symIn(z)} on Unichain`, "uni", r.transactionHash);
+  tl("trade", `${pct(fee)} fee`, "uni", r.transactionHash);
+  status("");
+  const res = $("result"); res.hidden = false;
+  if (fee > 3000n) {
+    const up = Math.round(100 * (Number(lp) / Number(normal) - 1));
+    res.className = "result win";
+    res.innerHTML = `<span class="num">+${up}% for LPs</span>You paid <b>${pct(fee)}</b> instead of 0.30%. LPs earned <b>${fmt(lp)} ${symIn(z)}</b> from your trade, not ${fmt(normal)}.`;
+  } else {
+    res.className = "result";
+    res.innerHTML = `You paid the normal <b>0.30%</b>. The higher fee had already ended when your trade landed. Run it again and trade a little faster.`;
   }
+  round = null;
+  setDir(!z);
+  setStage(3);
+}
+
+$("go").addEventListener("click", async () => {
+  if (busy) return;
+  busy = true; $("go").disabled = true; $("error").hidden = true;
+  try {
+    if (stage === 0) await doConnect();
+    else if (stage === 1) await doBase();
+    else if (stage === 2) await doUni();
+    else { $("result").hidden = true; $("txs").innerHTML = ""; tl("base", "–"); tl("shield", "–"); tl("trade", "–"); setStage(1); }
+  } catch (e) { fail(e); }
+  finally { busy = false; $("go").disabled = false; }
 });
 
 // ---------- live fee ----------
@@ -452,10 +461,9 @@ async function pollExpiry() {
     if (ls.length) expiry = Number(word(ls[ls.length - 1].data, 1));
   } catch {}
 }
-$("connect").addEventListener("click", () => (user ? null : connect()));
+setStage(0);
 pollFee(); pollExpiry(); setInterval(pollFee, 1000); setInterval(pollExpiry, 2500);
 addEventListener("scroll", () => $("nav").classList.toggle("scrolled", scrollY > 4), { passive: true });
-
 </script>
 </body>
 </html>
