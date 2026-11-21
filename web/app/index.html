@@ -390,7 +390,7 @@ async function prepare(c, z, amt) {
   }
   const allowance = BigInt(await call(c, token, "0xdd62ed3e" + enc.addr(user) + enc.addr(k.router)));
   if (allowance < amt) {
-    const r = await send(c, token, "0x095ea7b3" + enc.addr(k.router) + enc.uint(MAXU), `allow trading ${symIn(z)}`);
+    const r = await send(c, token, "0x095ea7b3" + enc.addr(k.router) + enc.uint(500n * E18), `allow trading up to 500 test ${symIn(z)}`);
     txLine(`Allowed trading ${symIn(z)} on ${k.name}`, c, r.transactionHash);
   }
 }
