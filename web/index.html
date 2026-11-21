@@ -544,7 +544,12 @@ async function pollFee() {
 }
 
 document.querySelectorAll(".copy").forEach((b) => b.addEventListener("click", async () => {
-  try { await navigator.clipboard.writeText(b.dataset.copy); b.classList.add("done"); b.setAttribute("aria-label", "Copied"); } catch { window.prompt("Copy address", b.dataset.copy); }
+  let ok = false;
+  try { await navigator.clipboard.writeText(b.dataset.copy); ok = true; } catch {
+    const t = document.createElement("textarea"); t.value = b.dataset.copy; t.style.cssText = "position:fixed;opacity:0"; document.body.appendChild(t); t.select();
+    try { ok = document.execCommand("copy"); } catch {} t.remove();
+  }
+  if (ok) { b.classList.add("done"); b.setAttribute("aria-label", "Copied"); }
   setTimeout(() => b.classList.remove("done"), 1600);
 }));
 pollFee(); setInterval(pollFee, 3000);
