@@ -48,6 +48,7 @@ Lagless pool ◀──Swap──────────── (arbitrage on Uni
 ```
 
 - **All decisions happen in the reactive contract**: decoding prices, measuring deviation, choosing the fee, and deciding when to refresh or clear.
+- **The fee stays up until prices match.** Each raise lasts 60 s; the reactive contract renews it while the gap is still open and clears it the moment prices converge. Waiting it out doesn't help an arbitrageur.
 - **The hook stays small.** It accepts calls only from the Reactive callback proxy, and only when Reactive Omni has stamped the payload with the LaglessReactive contract's address. It caps the fee and the shield's duration, and lets shields expire by `block.timestamp`, never by block count.
 - **Built for Reactive Omni.** `react()` is called directly by the Omni system contract (`0x8888…8888`, guarded by `onlySystem`; no ReactVM), subscriptions and callbacks go through that system contract (`requestCallbackV_1_0`), and fees are prepaid into the contract's Omni reserves. `src/omni/ReactiveOmni.sol` holds ABI-compatible bindings for solc 0.8.26, because `reactive-lib-omni` requires ^0.8.29 while Uniswap v4 pins 0.8.26.
 - **A control pool** (same pair, static 0.30%, no hook) on Unichain is the baseline for the results.
@@ -74,7 +75,7 @@ With the old ~7s Reactive blocks, the fee would land after the arbitrage. With O
 | Trigger | 20 bps price gap |
 | Slope | +50 pips per bp of gap |
 | Clear | gap ≤ 5 bps |
-| Shield duration | 10 s per raise/refresh, hard cap 60 s on the hook |
+| Shield duration | 60 s per raise, renewed while prices stay apart, cleared when they match; hard cap 120 s on the hook |
 
 ## Run the tests
 
@@ -149,10 +150,12 @@ It signs with the Foundry keystore account `lagless` and asks for the password o
 |---|---|
 | Tokens lWETH / lUSDC (same address on Base + Unichain Sepolia) | `0x9063cE4EBFBA81206E621158B7586024eeC6d0B3` / `0x41eFe7a3A065a5094Eb88c9F486238Fc227E7893` |
 | Base Sepolia source pool id | `0xba49af2a7fd75f159181a85b3a2dabff571a9ea24eba7cc3bf943f5d9b512ffd` |
-| LaglessReactive (Reactive Omni, Lasna) | [`0x1eee3853d5C0dEB9702eC4e7EEd205ff58d878e5`](https://lasna.reactscan.net/address/0x1eee3853d5C0dEB9702eC4e7EEd205ff58d878e5) |
-| LaglessHook (Unichain Sepolia) | [`0x03A696938EF795a0B1496FC407CF7B53F4702080`](https://sepolia.uniscan.xyz/address/0x03A696938EF795a0B1496FC407CF7B53F4702080) |
-| Lagless pool id (Unichain, dynamic fee) | `0x5c20493e45711a98dd4fd618626e5dd17b13d3c3d68690c9a4c7c70460bcbfd9` |
+| LaglessReactive (Reactive Omni, Lasna) | [`0xaACb71b1A18bDb107C580F040c9D6c1105968bE5`](https://lasna.reactscan.net/address/0xaACb71b1A18bDb107C580F040c9D6c1105968bE5) |
+| LaglessHook (Unichain Sepolia) | [`0x4e1EDAF301465C9f9BD30f73bc174a18D2F12080`](https://sepolia.uniscan.xyz/address/0x4e1EDAF301465C9f9BD30f73bc174a18D2F12080) |
+| Lagless pool id (Unichain, dynamic fee) | `0x09f473aae7534b017312c177d01dbf26fea9c71e7ca2d5e1815ae79f57c0ffeb` |
 | Control pool id (Unichain, static 0.30%) | `0xba49af2a7fd75f159181a85b3a2dabff571a9ea24eba7cc3bf943f5d9b512ffd` |
+
+**Version 1** (10-second raises; rounds 1–34 and the first live loop below): LaglessReactive [`0x1eee3853d5C0dEB9702eC4e7EEd205ff58d878e5`](https://lasna.reactscan.net/address/0x1eee3853d5C0dEB9702eC4e7EEd205ff58d878e5), LaglessHook [`0x03A696938EF795a0B1496FC407CF7B53F4702080`](https://sepolia.uniscan.xyz/address/0x03A696938EF795a0B1496FC407CF7B53F4702080), pool `0x5c20493e45711a98dd4fd618626e5dd17b13d3c3d68690c9a4c7c70460bcbfd9`. Version 2 keeps the fee raised until prices match, so a bot can no longer wait out a short window.
 
 ### First live loop (Nov 17, 2026)
 

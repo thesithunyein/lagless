@@ -208,8 +208,8 @@
 
 const ZERO = "0x0000000000000000000000000000000000000000";
 const TOK = { t0: "0x41eFe7a3A065a5094Eb88c9F486238Fc227E7893", t1: "0x9063cE4EBFBA81206E621158B7586024eeC6d0B3" }; // t0 = lUSDC, t1 = lWETH
-const HOOK = "0x03A696938EF795a0B1496FC407CF7B53F4702080";
-const LAG_POOL = "0x5c20493e45711a98dd4fd618626e5dd17b13d3c3d68690c9a4c7c70460bcbfd9";
+const HOOK = "0x4e1EDAF301465C9f9BD30f73bc174a18D2F12080";
+const LAG_POOL = "0x09f473aae7534b017312c177d01dbf26fea9c71e7ca2d5e1815ae79f57c0ffeb";
 const T = { swap: "0x40e9cecb9f5f1f1c5b9c97dec2917b7ee92e57ba5563708daca94dd84ad7112f", raised: "0x13f844c579f5de0779be5745dd10a1b97c38b333948071ca46f11c1660f578c8" };
 const CH = {
   base: { id: 84532, hex: "0x14a34", name: "Base Sepolia", rpc: ["https://base-sepolia-rpc.publicnode.com", "https://sepolia.base.org"], add: "https://sepolia.base.org", pm: "0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408", router: "0x8B5bcC363ddE2614281aD875bad385E0A785D3B9", scan: "https://sepolia.basescan.org", fee: 3000, hooks: ZERO },
@@ -271,7 +271,7 @@ let user = null, stage = 0, zfo = true, round = null, busy = false;
 const COPY = [
   { t: "Connect your wallet", d: "You need a little test ETH on Base Sepolia and Unichain Sepolia. Pool tokens are free.", b: "Connect wallet" },
   { t: "Move the price on Base", d: "Swap on Base, then confirm the Unichain swap your wallet shows right after. First run: your wallet also sets up both networks.", b: "Swap on Base" },
-  { t: "Trade on Unichain", d: "Make the same trade on the Lagless pool, like an arbitrage bot. Your wallet asks as soon as the higher fee is live. Confirm quickly: it lasts about 10 seconds.", b: "Swap on Unichain" },
+  { t: "Trade on Unichain", d: "Make the same trade on the Lagless pool, like an arbitrage bot. Your wallet asks as soon as the higher fee is live. It stays up until the prices match.", b: "Swap on Unichain" },
   { t: "Done", d: "That was the full loop: Base, Reactive, Unichain. Run it again in the other direction.", b: "Run again" },
 ];
 function setStage(n) {
@@ -453,7 +453,7 @@ async function doBase() {
   $("result").hidden = true; $("txs").innerHTML = "";
   tl("base", "–"); tl("shield", "–"); tl("trade", "–");
   // Get Unichain ready first (free tokens + trading allowance), so step 3 is only a network switch and one swap
-  // and lands inside the ~10 second higher-fee window.
+  // and lands while the higher fee is live.
   await ensureChain("uni");
   await prepare("uni", zfo, amt);
   await ensureChain("base");
@@ -468,7 +468,7 @@ async function doBase() {
   round = { zfo, amt, n, shield: watchShield(uniFrom, sqrt, t0) };
   setStage(2);
   // Go straight on: switch to Unichain now, then send the swap the moment the higher fee is live,
-  // so the trade lands inside the ~10 second window instead of depending on how fast someone clicks.
+  // so the trade lands while the higher fee is live.
   await doUni();
 }
 
@@ -514,7 +514,7 @@ async function doUni() {
     res.innerHTML = `<span class="num">+${up}% for LPs</span>You paid <b>${pct(fee)}</b> instead of 0.30%. LPs earned <b>${fmt(lp)} ${symIn(z)}</b> from your trade, not ${fmt(normal)}.`;
   } else {
     res.className = "result";
-    res.innerHTML = `You paid the normal <b>0.30%</b>. The higher fee had already ended when your trade landed. Run it again and trade a little faster.`;
+    res.innerHTML = `You paid the normal <b>0.30%</b>. The prices already matched when your trade landed, so there was nothing extra to charge. Run it again.`;
   }
   round = null;
   setDir(!z);
