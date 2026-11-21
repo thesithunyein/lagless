@@ -270,8 +270,8 @@ let user = null, stage = 0, zfo = true, round = null, busy = false;
 
 const COPY = [
   { t: "Connect your wallet", d: "You need a little test ETH on Base Sepolia and Unichain Sepolia. Pool tokens are free.", b: "Connect wallet" },
-  { t: "Move the price on Base", d: "Swap on the Base pool. Lagless sees it and raises the Unichain fee about two seconds later. First run: your wallet also sets up both networks.", b: "Swap on Base" },
-  { t: "Trade on Unichain", d: "Make the same trade on the Lagless pool, like an arbitrage bot. The higher fee lasts about 10 seconds.", b: "Swap on Unichain" },
+  { t: "Move the price on Base", d: "Swap on Base, then confirm the Unichain swap your wallet shows right after. First run: your wallet also sets up both networks.", b: "Swap on Base" },
+  { t: "Trade on Unichain", d: "Make the same trade on the Lagless pool, like an arbitrage bot. Your wallet asks as soon as the higher fee is live. Confirm quickly: it lasts about 10 seconds.", b: "Swap on Unichain" },
   { t: "Done", d: "That was the full loop: Base, Reactive, Unichain. Run it again in the other direction.", b: "Run again" },
 ];
 function setStage(n) {
@@ -465,10 +465,11 @@ async function doBase() {
   txLine(`Swapped ${n} ${symIn(zfo)} on Base`, "base", r.transactionHash);
   tl("base", "Done", "base", r.transactionHash);
   tl("shield", "Watching Unichain…");
-  round = { zfo, amt, n };
-  status("");
+  round = { zfo, amt, n, shield: watchShield(uniFrom, sqrt, t0) };
   setStage(2);
-  watchShield(uniFrom, sqrt, t0);
+  // Go straight on: switch to Unichain now, then send the swap the moment the higher fee is live,
+  // so the trade lands inside the ~10 second window instead of depending on how fast someone clicks.
+  await doUni();
 }
 
 async function watchShield(from, sqrt, t0) {
@@ -481,18 +482,24 @@ async function watchShield(from, sqrt, t0) {
       if (hit) {
         const t1 = await blockTs("uni", hit.blockNumber);
         tl("shield", `To ${pct(word(hit.data, 0))}, ${Math.max(0, t1 - t0)} s later`, "uni", hit.transactionHash);
-        return;
+        return true;
       }
     } catch {}
     await sleep(700);
   }
   tl("shield", "No change. The move was too small or prices were already apart.");
+  return false;
 }
 
 async function doUni() {
   const { zfo: z, amt, n } = round;
   await ensureChain("uni");
   await prepare("uni", z, amt);
+  if (round.shield) {
+    status("Waiting for Lagless to raise the Unichain fee…");
+    await round.shield;
+    round.shield = null;
+  }
   const r = await send("uni", CH.uni.router, swapData("uni", z, amt), `swap ${n} ${symIn(z)} on Unichain`);
   const ev = r.logs.find((x) => x.topics[0] === T.swap && x.topics[1].toLowerCase() === LAG_POOL);
   const fee = word(ev.data, 5), a0 = signed(word(ev.data, 0)), a1 = signed(word(ev.data, 1));
