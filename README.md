@@ -15,6 +15,7 @@
 <p align="center">
   <a href="https://lagless.sithunyein.com"><b>Website</b></a> ·
   <a href="https://lagless.sithunyein.com/app/"><b>Try it</b></a> ·
+  <a href="https://youtu.be/jL_Hv-3811w"><b>Demo video</b></a> ·
   <a href="#how-it-works">How it works</a> ·
   <a href="#results">Results</a> ·
   <a href="#deploy-testnets-0">Deploy</a> ·
@@ -47,6 +48,7 @@
 | Track | **Every Second Counts** (Base Sepolia → Reactive Omni → Unichain Sepolia) |
 | Deployed contracts | [Deployed addresses](#deployed-addresses-and-transactions) |
 | Full loop, origin event → callback | [Latest loop (v2)](#latest-live-loop-v2-nov-21-2026) and [first loop (v1)](#first-live-loop-nov-17-2026); every round's hashes in [`results.csv`](results.csv) |
+| Demo video (under 3 min) | [youtu.be/jL_Hv-3811w](https://youtu.be/jL_Hv-3811w) |
 | Working demo | [lagless.sithunyein.com/app](https://lagless.sithunyein.com/app/): connect a wallet, move the Base price, watch the Unichain fee rise, trade |
 | For LPs | [lagless.sithunyein.com/lp](https://lagless.sithunyein.com/lp/): add liquidity to the Lagless pool as a real Uniswap v4 position (official PositionManager), see fees earned vs a normal 0.30% pool, collect or remove |
 | Tests | `forge test`: 20 passing, also run in GitHub Actions |
