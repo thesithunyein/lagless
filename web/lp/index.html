@@ -553,6 +553,8 @@ async function loadPositions() {
       cmp.innerHTML = `Worth about <b>${earned.toFixed(4)} lUSDC</b>. The same trades in a normal 0.30% pool would have paid you about ${normal.toFixed(4)}${up > 0 ? `, so <b>+${up}%</b> here` : ""}.`;
     } else if (earned > 0) {
       cmp.innerHTML = `Worth about <b>${earned.toFixed(4)} lUSDC</b> in fees.`;
+    } else if (ratio) {
+      cmp.innerHTML = `Nothing to collect right now. New fees show up here after the next trade on the <a href="/app/">Try it</a> page.`;
     } else {
       cmp.innerHTML = `No trades yet. Run a round on the <a href="/app/">Try it</a> page and come back.`;
     }
