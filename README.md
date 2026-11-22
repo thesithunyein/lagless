@@ -22,10 +22,23 @@
 </p>
 
 <p align="center">
-  <img alt="Tests" src="https://img.shields.io/badge/tests-19%20passing-101828">
+  <img alt="Tests" src="https://img.shields.io/badge/tests-20%20passing-101828">
   <img alt="Median latency" src="https://img.shields.io/badge/median%20latency-2s-3D4FF2">
   <img alt="License" src="https://img.shields.io/badge/license-MIT-101828">
 </p>
+
+## For judges
+
+| Requirement | Where |
+|---|---|
+| Public, open-source repo (MIT) | this repository |
+| Track | **Every Second Counts** (Base Sepolia → Reactive Omni → Unichain Sepolia) |
+| Deployed contracts | [Deployed addresses](#deployed-addresses-and-transactions) |
+| Full loop, origin event → callback | [Latest loop (v2)](#latest-live-loop-v2-nov-21-2026) and [first loop (v1)](#first-live-loop-nov-17-2026); every round's hashes in [`results.csv`](results.csv) |
+| Working demo | [lagless.sithunyein.com/app](https://lagless.sithunyein.com/app/): connect a wallet, move the Base price, watch the Unichain fee rise, trade |
+| Tests | `forge test`: 20 passing, also run in GitHub Actions |
+| Built during the event | first commit Nov 17, 2026; full history in this repo |
+| Timers use timestamps, not blocks | every shield expires by `block.timestamp` (Base Sepolia's 200 ms blocks don't affect it) |
 
 ## Problem
 
@@ -41,7 +54,7 @@ v4 pool ──Swap(sqrtPriceX96)──▶  LaglessReactive.react()
                                  • deviation vs Unichain price (bps)      
                                  • fee = min(max, base + slope × dev)     
                                  • emit Callback ───────────────────────▶ LaglessHook.setShield()
-                                                                          • fee raised for N seconds
+                                                                          • fee raised, renewed until prices match
                                                                           • beforeSwap returns fee | OVERRIDE
 Lagless pool ◀──Swap──────────── (arbitrage on Unichain)                  
              ──Swap(sqrtPriceX96)▶ react(): prices converged? ──────────▶ LaglessHook.clearShield()
@@ -84,7 +97,7 @@ forge install   # or: git submodule update --init --recursive
 forge test -vv
 ```
 
-There are 19 tests covering the fee curve, caps, expiry, rejection of unauthorized callers and wrong reactive senders, the one-time `setReactive` binding, `onlySystem` on `react()`, rejection of static-fee pools, a fuzz test on the fee cap, and a local end-to-end loop (Base move → reactive callback → higher fee on Unichain → convergence → fee cleared).
+There are 20 tests covering the fee curve, caps, expiry, renewal of a raise while prices stay apart, rejection of unauthorized callers and wrong reactive senders, the one-time `setReactive` binding, `onlySystem` on `react()`, rejection of static-fee pools, a fuzz test on the fee cap, and a local end-to-end loop (Base move → reactive callback → higher fee on Unichain → convergence → fee cleared).
 
 ## Deploy (testnets, $0)
 
@@ -156,6 +169,21 @@ It signs with the Foundry keystore account `lagless` and asks for the password o
 | Control pool id (Unichain, static 0.30%) | `0xba49af2a7fd75f159181a85b3a2dabff571a9ea24eba7cc3bf943f5d9b512ffd` |
 
 **Version 1** (10-second raises; rounds 1–34 and the first live loop below): LaglessReactive [`0x1eee3853d5C0dEB9702eC4e7EEd205ff58d878e5`](https://lasna.reactscan.net/address/0x1eee3853d5C0dEB9702eC4e7EEd205ff58d878e5), LaglessHook [`0x03A696938EF795a0B1496FC407CF7B53F4702080`](https://sepolia.uniscan.xyz/address/0x03A696938EF795a0B1496FC407CF7B53F4702080), pool `0x5c20493e45711a98dd4fd618626e5dd17b13d3c3d68690c9a4c7c70460bcbfd9`. Version 2 keeps the fee raised until prices match, so a bot can no longer wait out a short window.
+
+### Latest live loop (v2, Nov 21, 2026)
+
+Round 40 in `results.csv`, on the current contracts:
+
+| Step | Chain | Tx | Block time |
+|---|---|---|---|
+| 1. Swap moves the price | Base Sepolia | [`0xf14b2f14…dd90be`](https://sepolia.basescan.org/tx/0xf14b2f14c1a4d1162e893b98cd743469da8352a8503007d19eb8f2b81edd90be) | 1795275353 |
+| 2. `react()` decides, requests callback | Reactive Omni | [`0xc6a42fb3…c44954`](https://lasna.reactscan.net/tx/0xc6a42fb38ff410ca694163d99f66fafdde39ee195a15187ed541af52cbc44954) | 1795275352 |
+| 3. `setShield` raises the LP fee to 0.49% | Unichain Sepolia | [`0x948eda10…7fdf07`](https://sepolia.uniscan.xyz/tx/0x948eda10ac885e0ce81395d16d21451697d60fa1b7f1c2965ca200b9877fdf07) | 1795275356 |
+| 4. Arbitrage on the Lagless pool pays 0.49% | Unichain Sepolia | [`0xb008b8bd…6bb7f2`](https://sepolia.uniscan.xyz/tx/0xb008b8bd13704bcb3b414d6998501f3e011fce126dcd3fcd293f1139576bb7f2) | |
+| 5. Same trade on the control pool pays 0.30% | Unichain Sepolia | [`0xf7d7a130…881b06`](https://sepolia.uniscan.xyz/tx/0xf7d7a130a5b57b751f19b7943551fd55581b42aeffa25a276937b5311e881b06) | |
+| 6. Prices match, `react()` requests `clearShield` | Reactive Omni | [`0x0a36c507…380fbd`](https://lasna.reactscan.net/tx/0x0a36c507d3674db36d1e169560103bde880a0e703e95cb18b0e440b42d380fbd) | 1795275361 |
+
+Base swap → Unichain fee change: **3 s**. Reactive Omni's clock runs about 1 s behind Base, so step 2 shows an earlier timestamp than step 1.
 
 ### First live loop (Nov 17, 2026)
 
