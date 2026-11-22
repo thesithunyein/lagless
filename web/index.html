@@ -201,6 +201,10 @@
     .cta { flex-wrap: wrap; }
     .cta .btn { flex: 1 1 140px; }
     .stage { padding: 8px; border-radius: 18px; }
+    .step { display: grid; grid-template-columns: 32px 1fr; column-gap: 14px; align-items: center; padding: 22px 20px 24px; }
+    .step .ic { width: 32px; height: 32px; border-radius: 9px; font-size: 15px; }
+    .step .ic + h3 { margin: 0; font-size: 18px; }
+    .step p { grid-column: 1 / -1; margin-top: 10px; }
   }
   @media (prefers-reduced-motion: no-preference) {
     .brand .b2 { animation: lag .9s .35s var(--ease) both; }
