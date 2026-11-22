@@ -491,11 +491,26 @@ async function decodeSwap(chain, l) {
 }
 const median = (xs) => { const s = [...xs].sort((a, b) => a - b), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
 
-async function load() {
+// Public RPCs prune old logs, so recorded rounds come from a snapshot of results.csv (web/rounds.json,
+// every row links to its transactions) and anything newer is read live from the chain.
+const RECENT = 40000; // Unichain blocks (~11 h) that public RPCs still serve
+function snapshotData(rows) {
+  const rounds = rows.map((r) => ({
+    base: { tx: r.baseTx, ts: r.baseTs, amountIn: r.amount, zfo: r.zfo },
+    shield: { tx: r.shieldTx, ts: r.shieldTs, fee: r.shieldFee },
+    latency: r.shieldTs - r.baseTs,
+    lag: { tx: r.lagTx, ts: r.shieldTs + 1, fee: r.lagFee, amountIn: r.amount, pool: CFG.lagPool },
+    ctl: { tx: r.ctlTx, ts: r.shieldTs + 2, fee: r.ctlFee, amountIn: r.amount, pool: CFG.ctlPool },
+  }));
+  return { rounds, shields: rounds.map((r) => r.shield), clears: [], uniSwaps: rounds.map((r) => r.lag) };
+}
+
+async function loadLive() {
   const latest = parseInt(await rpc("uni", "eth_blockNumber", []), 16);
+  const from = Math.max(CFG.uni.fromBlock, latest - RECENT);
   const [hookLogs, swapLogs] = await Promise.all([
-    logs("uni", { address: CFG.hooks }, CFG.uni.fromBlock, latest, 50000),
-    logs("uni", { address: CFG.uni.pm, topics: [T.swap, [...CFG.lagPools, CFG.ctlPool]] }, CFG.uni.fromBlock, latest, 50000),
+    logs("uni", { address: CFG.hooks }, from, latest, 20000),
+    logs("uni", { address: CFG.uni.pm, topics: [T.swap, [...CFG.lagPools, CFG.ctlPool]] }, from, latest, 20000),
   ]);
   const shields = await Promise.all(hookLogs.filter((l) => l.topics[0] === T.raised).map(async (l) => ({ tx: l.transactionHash, ts: await ts("uni", l), fee: Number(word(l.data, 0)), ref: word(l.data, 2) })));
   const clears = await Promise.all(hookLogs.filter((l) => l.topics[0] === T.cleared).map(async (l) => ({ tx: l.transactionHash, ts: await ts("uni", l) })));
@@ -515,6 +530,20 @@ async function load() {
     r.lag = CFG.lagPools.map(pick).find(Boolean); r.ctl = pick(CFG.ctlPool);
   });
   return { rounds, shields, clears, uniSwaps };
+}
+
+async function load() {
+  const snap = snapshotData(await fetch("/rounds.json", { cache: "no-store" }).then((r) => r.json()).catch(() => []));
+  let live = { rounds: [], shields: [], clears: [], uniSwaps: [] };
+  try { live = await loadLive(); } catch (e) { console.warn("live data unavailable", e); }
+  const seen = new Set(snap.rounds.map((r) => r.base.tx));
+  const seenTx = new Set([...snap.shields.map((s) => s.tx), ...snap.uniSwaps.map((u) => u.tx)]);
+  return {
+    rounds: [...snap.rounds, ...live.rounds.filter((r) => !seen.has(r.base.tx))],
+    shields: [...snap.shields, ...live.shields.filter((x) => !seenTx.has(x.tx))],
+    clears: live.clears,
+    uniSwaps: [...snap.uniSwaps, ...live.uniSwaps.filter((x) => !seenTx.has(x.tx))],
+  };
 }
 
 function render(d) {

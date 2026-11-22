@@ -288,7 +288,7 @@ const POSM = "0xf969aee60879c54baaed9f3ed26147db216fd664";      // Uniswap v4 Po
 const STATE_VIEW = "0xc199f1072a74d4e905aba1a84d9a45e2546b6222"; // Uniswap v4 StateView, Unichain Sepolia
 const PERMIT2 = "0x000000000022D473030F116dDEE9F6B43aC78BA3";
 const TL = -6000, TU = 6000; // same range as the pool's seed liquidity, so your share is meaningful
-const FROM_BLOCK = 68421777;      // v2 pool creation
+const RECENT = 40000;             // Unichain blocks (~11 h) public RPCs still serve logs for
 const KEY_T = ["tuple", ["address", "address", "uint24", "int24", "address"]];
 const KEY = [TOK.t0, TOK.t1, 0x800000, 60, HOOK];
 const Q96 = 2 ** 96;
@@ -479,8 +479,8 @@ async function findPositionIds() {
   const ids = new Set(JSON.parse(store.get(seenKey()) || "[]"));
   try {
     const to = parseInt(await rpc("uni", "eth_blockNumber", []), 16);
-    for (let from = FROM_BLOCK; from <= to; from += 50000) {
-      const ls = await rpc("uni", "eth_getLogs", [{ address: POSM, topics: ["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", null, "0x" + enc.addr(user)], fromBlock: "0x" + from.toString(16), toBlock: "0x" + Math.min(to, from + 49999).toString(16) }]);
+    for (let from = to - RECENT; from <= to; from += 20000) {
+      const ls = await rpc("uni", "eth_getLogs", [{ address: POSM, topics: ["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", null, "0x" + enc.addr(user)], fromBlock: "0x" + from.toString(16), toBlock: "0x" + Math.min(to, from + 19999).toString(16) }]);
       ls.forEach((l) => ids.add(BigInt(l.topics[3]).toString()));
     }
   } catch {}
@@ -509,8 +509,8 @@ async function normalRatio(fromBlock, p) {
   let paid = 0, normal = 0;
   try {
     const to = parseInt(await rpc("uni", "eth_blockNumber", []), 16);
-    for (let from = fromBlock; from <= to; from += 50000) {
-      const ls = await rpc("uni", "eth_getLogs", [{ address: CH.uni.pm, topics: [T.swap, LAG_POOL], fromBlock: "0x" + from.toString(16), toBlock: "0x" + Math.min(to, from + 49999).toString(16) }]);
+    for (let from = Math.max(fromBlock, to - RECENT); from <= to; from += 20000) {
+      const ls = await rpc("uni", "eth_getLogs", [{ address: CH.uni.pm, topics: [T.swap, LAG_POOL], fromBlock: "0x" + from.toString(16), toBlock: "0x" + Math.min(to, from + 19999).toString(16) }]);
       for (const l of ls) {
         const a0 = signed(word(l.data, 0)), a1 = signed(word(l.data, 1)), fee = Number(word(l.data, 5));
         const inValue = a0 < 0n ? Number(-a0) : Number(-a1) / p; // value of what the trader paid in, in lUSDC terms
@@ -518,7 +518,7 @@ async function normalRatio(fromBlock, p) {
       }
     }
   } catch {}
-  return paid ? normal / paid : 1;
+  return paid ? normal / paid : null; // null: no trades we can still see
 }
 
 async function loadPositions() {
@@ -535,7 +535,7 @@ async function loadPositions() {
     const earned = Number(x.f0) / 1e18 + Number(x.f1) / 1e18 / p; // in lUSDC terms
     const mintBlock = await mintBlockOf(x.id);
     const ratio = await normalRatio(mintBlock, p);
-    const normal = earned * ratio;
+    const normal = ratio ? earned * ratio : null;
     const el = document.createElement("div"); el.className = "pos";
     el.innerHTML = `
       <div class="pos-h"><b>Position ${x.id}</b><span>Uniswap v4 NFT</span></div>
@@ -546,9 +546,11 @@ async function loadPositions() {
       <p class="cmp"></p>
       <div class="acts"><button class="btn sm" data-a="collect">Collect fees</button><button class="btn sm ghost" data-a="remove">Remove</button></div>`;
     const cmp = el.querySelector(".cmp");
-    if (earned > 0) {
+    if (earned > 0 && normal) {
       const up = Math.round(100 * (earned / normal - 1));
       cmp.innerHTML = `Worth about <b>${earned.toFixed(4)} lUSDC</b>. The same trades in a normal 0.30% pool would have paid you about ${normal.toFixed(4)}${up > 0 ? `, so <b>+${up}%</b> here` : ""}.`;
+    } else if (earned > 0) {
+      cmp.innerHTML = `Worth about <b>${earned.toFixed(4)} lUSDC</b> in fees.`;
     } else {
       cmp.innerHTML = `No trades yet. Run a round on the <a href="/app/">Try it</a> page and come back.`;
     }
@@ -558,14 +560,14 @@ async function loadPositions() {
   }
 }
 async function mintBlockOf(id) {
+  const to = parseInt(await rpc("uni", "eth_blockNumber", []), 16);
   try {
-    const to = parseInt(await rpc("uni", "eth_blockNumber", []), 16);
-    for (let from = FROM_BLOCK; from <= to; from += 50000) {
-      const ls = await rpc("uni", "eth_getLogs", [{ address: POSM, topics: ["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", "0x" + "0".repeat(64), null, "0x" + enc.uint(BigInt(id))], fromBlock: "0x" + from.toString(16), toBlock: "0x" + Math.min(to, from + 49999).toString(16) }]);
+    for (let from = to - RECENT; from <= to; from += 20000) {
+      const ls = await rpc("uni", "eth_getLogs", [{ address: POSM, topics: ["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", "0x" + "0".repeat(64), null, "0x" + enc.uint(BigInt(id))], fromBlock: "0x" + from.toString(16), toBlock: "0x" + Math.min(to, from + 19999).toString(16) }]);
       if (ls.length) return parseInt(ls[0].blockNumber, 16);
     }
   } catch {}
-  return FROM_BLOCK;
+  return to - RECENT; // minted earlier than the window: compare on the trades we can still see
 }
 
 async function collect(id) {
