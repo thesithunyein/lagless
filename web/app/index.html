@@ -270,14 +270,19 @@ let user = null, stage = 0, zfo = true, round = null, busy = false;
 
 const COPY = [
   { t: "Connect your wallet", d: "You need a little test ETH on Base Sepolia and Unichain Sepolia. Pool tokens are free.", b: "Connect wallet" },
-  { t: "Move the price on Base", d: "Swap on Base, then confirm the Unichain swap your wallet shows right after. First run: your wallet also sets up both networks.", b: "Swap on Base" },
+  { t: "Move the price on Base", d: "Swap on Base, then confirm the Unichain swap your wallet shows right after.", b: "Swap on Base" },
   { t: "Trade on Unichain", d: "Make the same trade on the Lagless pool, like an arbitrage bot. Your wallet asks as soon as the higher fee is live. It stays up until the prices match.", b: "Swap on Unichain" },
   { t: "Done", d: "That was the full loop: Base, Reactive, Unichain. Run it again in the other direction.", b: "Run again" },
 ];
+let setupDone = false; // true once this wallet has tokens + allowances on both chains
 function setStage(n) {
   stage = n;
   const c = COPY[n];
   $("title").textContent = c.t; $("desc").textContent = c.d; $("go").textContent = c.b;
+  if (n === 1) {
+    $("title").textContent = setupDone ? "Run it again" : c.t;
+    if (!setupDone) $("desc").textContent = c.d + " The first time, your wallet also asks to set up test tokens on both networks.";
+  }
   document.querySelectorAll(".steps li").forEach((li) => {
     const s = Number(li.dataset.s);
     li.classList.toggle("now", s === Math.min(n, 2) && n < 3);
@@ -309,8 +314,16 @@ async function setUser(a) {
   if (stage === 0) setStage(1);
   try {
     const [b, u] = await Promise.all([rpc("base", "eth_getBalance", [user, "latest"]), rpc("uni", "eth_getBalance", [user, "latest"])]);
-    $("who").textContent = `${short(user)}. Base ${fmt(BigInt(b), 3)} ETH, Unichain ${fmt(BigInt(u), 3)} ETH`;
-    $("faucet").hidden = BigInt(b) > 10n ** 15n && BigInt(u) > 10n ** 15n;
+    $("who").textContent = `${short(user)}. Base ${fmt(BigInt(b), 4)} ETH, Unichain ${fmt(BigInt(u), 4)} ETH`;
+    $("faucet").hidden = BigInt(b) > 10n ** 14n && BigInt(u) > 10n ** 14n;
+  } catch {}
+  // Has this wallet already been through setup (both tokens allowed on both routers)?
+  try {
+    const checks = [];
+    for (const c of ["base", "uni"]) for (const t of [TOK.t0, TOK.t1])
+      checks.push(call(c, t, "0xdd62ed3e" + enc.addr(user) + enc.addr(CH[c].router)).then((x) => BigInt(x) >= 20n * E18));
+    setupDone = (await Promise.all(checks)).filter(Boolean).length >= 2;
+    if (stage === 1) setStage(1);
   } catch {}
 }
 setTimeout(() => {
@@ -518,6 +531,7 @@ async function doUni() {
   }
   round = null;
   setDir(!z);
+  setupDone = true;
   setStage(3);
 }
 
