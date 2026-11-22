@@ -182,6 +182,7 @@ Round 40 in `results.csv`, on the current contracts:
 | 4. Arbitrage on the Lagless pool pays 0.49% | Unichain Sepolia | [`0xb008b8bd…6bb7f2`](https://sepolia.uniscan.xyz/tx/0xb008b8bd13704bcb3b414d6998501f3e011fce126dcd3fcd293f1139576bb7f2) | |
 | 5. Same trade on the control pool pays 0.30% | Unichain Sepolia | [`0xf7d7a130…881b06`](https://sepolia.uniscan.xyz/tx/0xf7d7a130a5b57b751f19b7943551fd55581b42aeffa25a276937b5311e881b06) | |
 | 6. Prices match, `react()` requests `clearShield` | Reactive Omni | [`0x0a36c507…380fbd`](https://lasna.reactscan.net/tx/0x0a36c507d3674db36d1e169560103bde880a0e703e95cb18b0e440b42d380fbd) | 1795275361 |
+| 7. `clearShield` returns the fee to 0.30% | Unichain Sepolia | [`0xfc46c094…3d5756`](https://sepolia.uniscan.xyz/tx/0xfc46c094dbd520dab0edb16fe244aed996f90f3511b13a15b0a7bb4e973d5756) | |
 
 Base swap → Unichain fee change: **3 s**. Reactive Omni's clock runs about 1 s behind Base, so step 2 shows an earlier timestamp than step 1.
 
