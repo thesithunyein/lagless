@@ -26,9 +26,17 @@
 </p>
 
 <p align="center">
-  <img alt="Tests" src="https://img.shields.io/badge/tests-20%20passing-101828">
-  <img alt="Median latency" src="https://img.shields.io/badge/median%20latency-2s-3D4FF2">
-  <img alt="License" src="https://img.shields.io/badge/license-MIT-101828">
+  <a href="https://github.com/thesithunyein/lagless/actions/workflows/test.yml"><img alt="Tests" src="https://github.com/thesithunyein/lagless/actions/workflows/test.yml/badge.svg"></a>
+  <a href="#results"><img alt="Live rounds" src="https://img.shields.io/badge/live%20rounds-39%2F39%20shielded-3D4FF2"></a>
+  <a href="#results"><img alt="Median latency" src="https://img.shields.io/badge/Base%20%E2%86%92%20Unichain-~2%20s-3D4FF2"></a>
+  <a href="#results"><img alt="LP fees" src="https://img.shields.io/badge/LP%20fees-%2B66%25-F5A524"></a>
+  <br>
+  <img alt="Solidity" src="https://img.shields.io/badge/Solidity-0.8.26-363636?logo=solidity&logoColor=white">
+  <img alt="Foundry" src="https://img.shields.io/badge/built%20with-Foundry-101828">
+  <img alt="Uniswap v4" src="https://img.shields.io/badge/Uniswap-v4%20hook-FF007A?logo=uniswap&logoColor=white">
+  <img alt="Reactive Omni" src="https://img.shields.io/badge/Reactive-Omni-101828">
+  <img alt="Networks" src="https://img.shields.io/badge/testnets-Base%20Sepolia%20%7C%20Unichain%20Sepolia%20%7C%20Lasna-0052FF">
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-MIT-101828"></a>
 </p>
 
 ## For judges
