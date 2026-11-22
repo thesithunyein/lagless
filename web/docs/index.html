@@ -187,7 +187,7 @@
 cd lagless
 forge install
 forge test -vv</code></pre></div>
-<p>19 tests cover the fee curve, caps, expiry, rejection of unauthorized callers, the one-time reactive binding, a fuzz test on the fee cap, and a full local loop from a Base move to a cleared fee.</p>
+<p>20 tests cover the fee curve, caps, expiry, renewal of a raise while prices stay apart, rejection of unauthorized callers, the one-time reactive binding, a fuzz test on the fee cap, and a full local loop from a Base move to a cleared fee. The same tests run on every push in GitHub Actions.</p>
 </section>
 <section id="deploy"><h2>Deploy a pool</h2>
 <p>Everything runs on testnets at no cost. Use a wallet you only use for development, funded on Base Sepolia, Unichain Sepolia and Reactive Lasna (lREACT).</p>
@@ -200,9 +200,9 @@ source .env</code></pre></div>
 forge script script/Deploy.s.sol:DeployTokens --rpc-url $UNICHAIN_SEPOLIA_RPC --private-key $PRIVATE_KEY --broadcast</code></pre></div></li>
 <li><h4>Create the source pool on Base</h4><p>Set <code>BASE_POOL_ID</code>.</p>
 <div class="code"><button class="cc" aria-label="Copy code">Copy</button><pre><code>forge script script/Deploy.s.sol:DeployBasePool --rpc-url $BASE_SEPOLIA_RPC --private-key $PRIVATE_KEY --broadcast</code></pre></div></li>
-<li><h4>Deploy the hook and pools on Unichain</h4><p>Mines a hook address with the right permission bits, then creates the Lagless pool and a static 0.30% control pool. Set <code>HOOK</code>, <code>LAGLESS_POOL_ID</code> and <code>CONTROL_POOL_ID</code>.</p>
+<li><h4>Deploy the hook and pools on Unichain</h4><p>First read the Base price with <code>python3 script/base_price.py</code> and set <code>INIT_SQRT_PRICE_X96</code>, so the new pool starts in step with Base. The script mines a hook address with the right permission bits, funds the hook with 0.0005 ETH for callback fees, and creates the Lagless pool and a static 0.30% control pool. Set <code>HOOK</code>, <code>LAGLESS_POOL_ID</code> and <code>CONTROL_POOL_ID</code>.</p>
 <div class="code"><button class="cc" aria-label="Copy code">Copy</button><pre><code>forge script script/Deploy.s.sol:DeployUnichain --rpc-url $UNICHAIN_SEPOLIA_RPC --private-key $PRIVATE_KEY --broadcast</code></pre></div></li>
-<li><h4>Deploy the reactive contract</h4><p>Subscribes to both pools and prepays 0.1 lREACT into its Omni reserves. Set <code>REACTIVE</code>.</p>
+<li><h4>Deploy the reactive contract</h4><p>Subscribes to both pools and prepays <code>OMNI_RESERVE_WEI</code> (default 0.1 lREACT) into its Omni reserves. Lasna needs a priority tip, so add <code>--with-gas-price 101gwei --priority-gas-price 1gwei</code>. Set <code>REACTIVE</code>.</p>
 <div class="code"><button class="cc" aria-label="Copy code">Copy</button><pre><code>forge script script/Deploy.s.sol:DeployReactive --rpc-url $LASNA_RPC --private-key $PRIVATE_KEY --broadcast</code></pre></div></li>
 <li><h4>Bind the hook</h4><p>A one-time call. After this, only your reactive contract can change the fee.</p>
 <div class="code"><button class="cc" aria-label="Copy code">Copy</button><pre><code>forge script script/Deploy.s.sol:SetReactive --rpc-url $UNICHAIN_SEPOLIA_RPC --private-key $PRIVATE_KEY --broadcast</code></pre></div></li>
@@ -252,7 +252,7 @@ forge script script/Deploy.s.sol:DeployTokens --rpc-url $UNICHAIN_SEPOLIA_RPC --
 <div class="code"><button class="cc" aria-label="Copy code">Copy</button><pre><code>python3 script/rounds.py --sync 150   # once: align Unichain with the Base price
 python3 script/rounds.py 20           # 20 rounds, alternating direction
 python3 script/rounds.py 10 --race    # arbitrage fires right after the Base move</code></pre></div>
-<p>It signs with the Foundry keystore account <code>lagless</code> and asks for the password once. Latest results are on the <a href="/#results">home page</a>, read live from the chain.</p>
+<p>It signs with the Foundry keystore account <code>lagless</code> and asks for the password once. Then run <code>python3 script/export_rounds.py</code> to refresh <code>web/rounds.json</code>: public RPCs drop old logs after about a day, so the <a href="/#results">home page</a> shows recorded rounds from this snapshot and adds newer activity live from the chain.</p>
 </section>
 <section id="earn"><h2>Earn as an LP</h2>
 <p>The <a href="/lp/">Earn</a> page adds liquidity to the Lagless pool through Uniswap's official v4 PositionManager on Unichain Sepolia (<code>0xf969…d664</code>), so you get a normal position NFT that only you control. Tokens are approved once through Permit2.</p>

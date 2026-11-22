@@ -128,10 +128,12 @@ forge script script/Deploy.s.sol:DeployTokens --rpc-url $UNICHAIN_SEPOLIA_RPC --
 forge script script/Deploy.s.sol:DeployBasePool --rpc-url $BASE_SEPOLIA_RPC --private-key $PRIVATE_KEY --broadcast
 
 # 3. Hook + Lagless pool + control pool on Unichain → set HOOK, LAGLESS_POOL_ID, CONTROL_POOL_ID
+#    Start the pool at the Base price, and the hook gets 0.0005 ETH for callback fees (HOOK_FUNDING_WEI)
+export INIT_SQRT_PRICE_X96=$(python3 script/base_price.py | sed -n 's/^INIT_SQRT_PRICE_X96=//p')
 forge script script/Deploy.s.sol:DeployUnichain --rpc-url $UNICHAIN_SEPOLIA_RPC --private-key $PRIVATE_KEY --broadcast
 
 # 4. Reactive contract on Reactive Omni, prepaid with OMNI_RESERVE_WEI (default 0.1 lREACT) → set REACTIVE
-forge script script/Deploy.s.sol:DeployReactive --rpc-url $LASNA_RPC --private-key $PRIVATE_KEY --broadcast
+forge script script/Deploy.s.sol:DeployReactive --rpc-url $LASNA_RPC --private-key $PRIVATE_KEY --broadcast --with-gas-price 101gwei --priority-gas-price 1gwei
 
 # 5. Bind the hook to the reactive contract (one-time)
 forge script script/Deploy.s.sol:SetReactive --rpc-url $UNICHAIN_SEPOLIA_RPC --private-key $PRIVATE_KEY --broadcast
@@ -168,6 +170,7 @@ POOL=control AMOUNT=... ZERO_FOR_ONE=true forge script script/Swap.s.sol:Swap --
 python3 script/rounds.py --sync 150   # one-time: align the Unichain pools with the Base price
 python3 script/rounds.py 20           # 20 rounds, alternating direction
 python3 script/rounds.py 10 --race    # arbitrage fires right after the Base move (fast bot)
+python3 script/export_rounds.py       # refresh web/rounds.json for the website
 ```
 
 It signs with the Foundry keystore account `lagless` and asks for the password once per run.
