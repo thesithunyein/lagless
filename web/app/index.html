@@ -268,7 +268,7 @@ function useWallet(p) {
   eth = p;
   eth.on?.("accountsChanged", (a) => setUser(a[0]));
 }
-let user = null, stage = 0, zfo = true, round = null, busy = false;
+let user = null, stage = 0, zfo = true, round = null, busy = false, shieldAt = 0;
 
 const COPY = [
   { t: "Connect your wallet", d: "You need a little test ETH on Base Sepolia and Unichain Sepolia. Pool tokens are free.", b: "Connect wallet" },
@@ -497,6 +497,7 @@ async function watchShield(from, sqrt, t0) {
       if (hit) {
         const t1 = await blockTs("uni", hit.blockNumber);
         tl("shield", `To ${pct(word(hit.data, 0))}, ${Math.max(0, t1 - t0)} s later`, "uni", hit.transactionHash);
+        shieldAt = t1;
         return true;
       }
     } catch {}
@@ -529,7 +530,10 @@ async function doUni() {
     res.innerHTML = `<span class="num">+${up}% for LPs</span>You paid <b>${pct(fee)}</b> instead of 0.30%. LPs earned <b>${fmt(lp)} ${symIn(z)}</b> from your trade, not ${fmt(normal)}. <a href="/lp/">Become an LP and earn this</a>.`;
   } else {
     res.className = "result";
-    res.innerHTML = `You paid the normal <b>0.30%</b>. The prices already matched when your trade landed, so there was nothing extra to charge. Run it again.`;
+    const late = shieldAt ? (await blockTs("uni", r.blockNumber)) - shieldAt : 0;
+    res.innerHTML = late >= 55
+      ? `You paid the normal <b>0.30%</b>. Your trade landed ${late} seconds after the fee rose, and with no other trades in between, the higher fee had run out after about a minute. A bot would have traded within seconds. Run it again and confirm a little faster.`
+      : `You paid the normal <b>0.30%</b>. The prices already matched when your trade landed, so there was nothing extra to charge. Run it again.`;
   }
   round = null;
   setDir(!z);
