@@ -419,6 +419,8 @@ function amountsFor(L, p) {
   const s = Math.sqrt(p), a = sqrtAt(TL), b = sqrtAt(TU);
   return { a0: L * (b - s) / (s * b), a1: L * (s - a) }; // in wei-units, as floats
 }
+// lWETH needed per lUSDC for a position in [TL, TU] at price p
+function pairRatio(p) { const s = Math.sqrt(p), a = sqrtAt(TL), b = sqrtAt(TU); return (s - a) * (s * b) / (b - s); }
 function liquidityFor(a0wei, a1wei, p) {
   const s = Math.sqrt(p), a = sqrtAt(TL), b = sqrtAt(TU);
   const L0 = a0wei * (s * b) / (b - s), L1 = a1wei / (s - a);
@@ -443,7 +445,7 @@ async function addLiquidity() {
   await ensureUni();
   const { p } = await poolState();
   const a0 = BigInt(Math.round(n * 1e6)) * 10n ** 12n;
-  const a1 = BigInt(Math.round(n * p * 1e6)) * 10n ** 12n;
+  const a1 = BigInt(Math.round(n * pairRatio(p) * 1e6)) * 10n ** 12n;
   const max0 = a0 * 102n / 100n, max1 = a1 * 102n / 100n;
   const need = { [TOK.t0]: max0, [TOK.t1]: max1 };
   const sym = { [TOK.t0]: "lUSDC", [TOK.t1]: "lWETH" };
@@ -464,7 +466,7 @@ async function addLiquidity() {
   const L = liquidityFor(Number(a0), Number(a1), p);
   const mint = "0x" + abiEncode([KEY_T, "int24", "int24", "uint256", "uint128", "uint128", "address", "bytes"], [KEY, TL, TU, L, max0, max1, user, "0x"]);
   const settle = "0x" + abiEncode(["address", "address"], [TOK.t0, TOK.t1]);
-  const r = await modify([ACT.MINT, ACT.SETTLE_PAIR], [mint, settle], `add ${n} lUSDC and ${(n * p).toFixed(2)} lWETH`);
+  const r = await modify([ACT.MINT, ACT.SETTLE_PAIR], [mint, settle], `add ${n} lUSDC and ${(n * pairRatio(p)).toFixed(2)} lWETH`);
   const tr = r.logs.find((l) => l.address.toLowerCase() === POSM && l.topics[0] === "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef");
   if (tr) remember(BigInt(tr.topics[3]).toString());
   status("");
@@ -607,7 +609,7 @@ $("dc").addEventListener("click", async () => {
 });
 $("amt").addEventListener("input", async () => {
   const n = Number($("amt").value);
-  try { const { p } = await poolState(); $("pair").textContent = n > 0 ? `and about ${(n * p).toFixed(2)} lWETH` : ""; } catch {}
+  try { const { p } = await poolState(); $("pair").textContent = n > 0 ? `and about ${(n * pairRatio(p)).toFixed(2)} lWETH` : ""; } catch {}
 });
 setTimeout(() => {
   const last = store.get("lagless.wallet");
